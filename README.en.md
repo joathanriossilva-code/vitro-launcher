@@ -8,7 +8,7 @@ Everything runs on the TV itself. Vitro has no server, sends no data anywhere an
 > A project by a Brazilian enthusiast who just wanted to fix a problem with their own TV, and decided to share the
 > fix with the world.
 
-*Português: [README.md](README.md)* (the full guide, with more screenshots). The app speaks English and
+**How to use it, button by button: [Tutorial](TUTORIAL.en.md).** *Português: [README.md](README.md)* (the full guide, with more screenshots). The app speaks English and
 Portuguese: it follows the TV's language, and you can switch in Home › Vitro settings › About.
 
 ![Vitro's home screen with the settings menu open](docs/guia/menu.jpg)
@@ -133,6 +133,16 @@ Vitro with no third-party libraries.
   it off for good, uninstall Vitro.
 - **Everything:** uninstall Vitro. Revoke the key in Developer options › Revoke USB debugging authorizations.
   Disabled apps stay disabled until you enable them.
+
+## Support the project
+
+Vitro is free and will stay free. If it helped your TV and you want to support it, use the **Sponsor** button at the
+top of this page (GitHub Sponsors). In Brazil, you can also donate any amount through PIX by pointing your phone's
+camera at this QR code:
+
+<img src="docs/doacao/pix.png" alt="PIX QR code to support Vitro" width="220">
+
+The same QR code is in the app, in Settings › About.
 
 ## Build
 

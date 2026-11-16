@@ -9,7 +9,7 @@ Tudo roda na própria TV. O Vitro não tem servidor, não manda dados para fora 
 > Um projeto de um entusiasta brasileiro, que só queria resolver um problema da própria televisão e resolveu
 > dividir a solução com o mundo.
 
-*English: [README.en.md](README.en.md).* O app fala português e inglês: segue o idioma da TV, e dá para trocar em
+**Como usar, botão por botão: [Tutorial](TUTORIAL.md).** *English: [README.en.md](README.en.md).* O app fala português e inglês: segue o idioma da TV, e dá para trocar em
 Home › ajustes do Vitro › Sobre.
 
 ![Tela inicial do Vitro com o menu de ajustes aberto](docs/guia/menu.jpg)
@@ -24,7 +24,8 @@ Home › ajustes do Vitro › Sobre.
 6. [O que é desativado em cada sistema](#o-que-%C3%A9-desativado-em-cada-sistema)
 7. [Desfazer](#desfazer)
 8. [Desligar a TV pela voz (Fire TV)](#desligar-a-tv-pela-voz-fire-tv)
-9. [Compilar](#compilar), [Créditos](#cr%C3%A9ditos) e [Licença](#licen%C3%A7a)
+9. [Apoie o projeto](#apoie-o-projeto)
+10. [Compilar](#compilar), [Créditos](#cr%C3%A9ditos) e [Licença](#licen%C3%A7a)
 
 ## Onde funciona
 
@@ -188,7 +189,7 @@ com poucos MB e os avisos do sistema estão em inglês.
 | ![Tela inicial](docs/guia/inicio.jpg) | ![Todos os apps](docs/guia/todos-os-apps.jpg) |
 | **Tela inicial.** Relógio de vidro e a barra de apps. Segure OK sobre um app para mover ou tirar da barra. | **Todos os apps.** O último item da barra abre a gaveta com tudo o que está instalado. |
 | ![Menu de ajustes](docs/guia/menu.jpg) | ![Sobre](docs/guia/sobre.jpg) |
-| **Ajustes** (o ícone no canto de cima). | **Sobre.** Versão, créditos e a escolha de idioma. |
+| **Ajustes** (o ícone no canto de cima). | **Sobre.** Versão, créditos, idioma e o QR Code para apoiar o projeto. |
 
 O menu de ajustes tem estas linhas:
 
@@ -200,7 +201,9 @@ O menu de ajustes tem estas linhas:
   desliga junto.
 - **Sons:** um toque curto ao mover, confirmar e voltar. Vem desligado.
 - **Autoreparar:** confere e refaz o que uma atualização desfez.
-- **Sobre:** versão, créditos e idioma.
+- **Sobre:** versão, créditos, idioma e apoio ao projeto (QR Code do PIX).
+
+Cada botão do controle e cada menu, com prints: [Tutorial](TUTORIAL.md).
 
 Papéis de parede livres que vêm com o Vitro:
 
@@ -252,6 +255,18 @@ em Mais › Rotinas › +:
 Quando a rotina manda "desligar a TV", o Vitro põe o Fire TV para dormir. Se a sua TV aceita HDMI-CEC (Anynet+,
 SIMPLINK, BRAVIA Sync...), ela desliga junto. Se não aceita, ligue nela o desligamento automático sem sinal (nas
 Samsung, Sistema › Solução Ecológica › Espera sem Sinal).
+
+## Apoie o projeto
+
+O Vitro é gratuito e continua sendo. Se ele ajudou a sua TV e você quiser apoiar, aponte a câmera do celular para o QR
+Code do PIX (qualquer valor):
+
+<img src="docs/doacao/pix.png" alt="QR Code PIX para apoiar o Vitro" width="220">
+
+Chave aleatória: `dcbc1400-a4d6-4565-b047-b52c2e4ed641`
+
+O mesmo QR Code aparece no app, em Ajustes › Sobre. Fora do Brasil, o apoio pelo **GitHub Sponsors** fica no botão
+"Sponsor" no topo desta página.
 
 ## Compilar
 
