@@ -1,0 +1,11 @@
+01a-leque.jpg=Leque|Fan
+01b-ondas.jpg=Ondas|Waves
+02a-luar.jpg=Luar|Moonlight
+02b-crista.jpg=Crista|Crest
+03-saturn-cassini.jpg=Saturno|Saturn
+04-earthset-artemis.jpg=Terra|Earth
+05-denali-wonder-lake.jpg=Denali
+06-dune-ridge.jpg=Areia|Sand
+08-klee-castle-and-sun.jpg=Klee
+09-funke-composition.jpg=Funke
+10-freundlich-composition.jpg=Freundlich

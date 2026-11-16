@@ -1,0 +1,100 @@
+# Debloat do Vitro para Android TV e Google TV (o do Fire OS fica em debloat.txt). Formato igual:
+#   grupo   pacote   # descrição em português | English
+#
+# Só desativa (pm disable-user), nunca apaga: tudo volta em Configurações › Apps. Um pacote que não existe na TV é
+# simplesmente ignorado, então a mesma lista serve para Google TV, Android TV clássico e TVs de cada marca.
+#
+# Grupos (ver SetupActivity):
+#   anuncios, telemetria, extras   "Recomendados" na primeira configuração (já marcados no diagnóstico)
+#   apps-google, apps-tcl          entram no cartão "Recomendados e apps do Google" (e da TCL, nas TVs TCL)
+#   opcional                       só aparecem no diagnóstico, desmarcados (quem não usa, marca)
+#   voz                            nunca oferecidos: o Assistente e a busca por voz continuam funcionando
+#
+# Nomes conferidos em 16/11/2026 na lista do Universal Android Debloater (UAD-ng), nas páginas do Google Play, em
+# guias de debloat de Google TV e Shield e na imagem de Android TV do emulador. NUNCA entram aqui: Play Store e
+# serviços do Google, o assistente de configuração (com.google.android.tungsten.setupwraith: tirá-lo derruba o
+# volume em TVs Sony e o Wi-Fi salvo na configuração), com.android.providers.tv, com.android.tv.settings, os
+# serviços do controle remoto e do teclado, e as telas iniciais do sistema (o Vitro as mantém ligadas e só toma a
+# frente pelo botão Home).
+
+# Recomendações e anúncios da tela inicial. No Android TV clássico, desativar o tvrecommendations tira a fileira
+# "Continuar assistindo" e a maior parte dos anúncios; no Google TV, os anúncios vêm da própria tela inicial.
+anuncios      com.google.android.tvrecommendations     # recomendações e anúncios da tela inicial | home screen recommendations and ads
+anuncios      com.google.android.leanbacklauncher.recommendations  # recomendações da tela inicial antiga | recommendations for the old home screen
+
+# Relatórios enviados ao Google
+telemetria    com.google.android.feedback              # envio de relatórios de falha e opinião ao Google | sends crash reports and feedback to Google
+telemetria    com.google.android.tv.bugreportsender    # envio de relatórios de erro | bug report sender
+
+# Extras
+extras        com.google.android.apps.tv.dreamx        # modo ambiente do Google TV, com conteúdo promovido | Google TV ambient mode, with promoted content
+
+# Apps do Google que muita gente não usa
+apps-google   com.google.android.youtube.tvmusic       # YouTube Music | YouTube Music
+apps-google   com.google.android.youtube.tvkids        # YouTube Kids | YouTube Kids
+apps-google   com.google.android.play.games            # Google Play Games | Google Play Games
+apps-google   com.google.android.backdrop              # protetor de tela do Android TV | Android TV screensaver
+apps-google   com.google.android.apps.tv.netoscope     # diagnóstico de conexão | connectivity diagnostics
+
+# Só pelo diagnóstico: úteis para muita gente. Com o app Google TV desativado, filmes comprados podem parar de tocar;
+# sem o Chromecast integrado, o celular não transmite para a TV; sem o YouTube, o botão do YouTube no controle para.
+opcional      com.google.android.videos                # app Google TV / Play Filmes | Google TV / Play Movies app
+opcional      com.google.android.apps.mediashell       # Chromecast integrado (transmitir do celular) | Chromecast built-in (casting from a phone)
+opcional      com.google.android.youtube.tv            # YouTube | YouTube
+
+# ---- TVs TCL (Google TV e Android TV "BeyondTV") ------------------------------------------------------------------
+# Conferido em 16/11/2026 em 85 listas de modelos TCL reais (projeto CleanYourTV), no tcl-tv-despy e em guias públicos.
+# Só entra o que é seguro em todos os modelos. FICAM DE FORA, porque mudam de modelo para modelo: partnercustomizer
+# (tecla T e widgets em alguns), dashboard (menu de fontes em alguns), exhibit (modo arte nos NXTFRAME), interactive
+# (HbbTV), useragreement, eva, assistant, overseasappshow e cyberui (é a tela inicial nas TVs do mercado chinês).
+# NUNCA desativar: com.tcl.tv, tvinput, tvpassthrough, sourcemananger e suspension (TV ao vivo, HDMI, sintonizador,
+# menu de fontes: sem eles a TV fica "Sem sinal" ou a tecla Input para), com.tcl.settings e showmode (imagem e som),
+# system.server, systemserver, systemui.plugin, globalkeyoverlay, framework.custom, keycustomfunctionservice e keyhelp
+# (teclas e volume), autopair, tcl_bt_rcu_service, micmanager e inputmethod.international (controle, microfone e
+# teclado), providers.config, initsetup e factory.view (Wi-Fi e busca de canais), xian.StartandroidService, com.tvos,
+# os com.mediatek.* da TV ao vivo e os atualizadores com.tcl.ttvs e com.tcl.versionUpdateApp (sem eles a TV para de
+# receber atualizações; o ttvs também alimenta a TV ao vivo em alguns modelos).
+# Algumas TCL religam certos apps depois de uma atualização: a guarda do Vitro os desativa de novo.
+
+anuncios      com.tcl.messagebox                       # mensagens e promoções da TCL | TCL messages and promotions
+anuncios      com.tcl.waterfall.overseas               # TCL Channel, conteúdo e anúncios da TCL | TCL Channel, TCL content and ads
+anuncios      com.tcl.tv.tclhome_passive               # conteúdo da TCL empurrado para a tela inicial | TCL content pushed to the home screen
+anuncios      android.autoinstalls.config.google.gtvpai  # instalação silenciosa de apps de parceiros (Google TV) | silent partner app installs (Google TV)
+anuncios      android.autoinstalls.config.tcl.device   # instalação silenciosa de apps de parceiros | silent partner app installs
+anuncios      com.tcl.smartlink.core                   # instalador silencioso de apps de parceiros | silent partner app installer
+anuncios      com.tcl.bootadservice                    # anúncio de tela cheia ao ligar a TV | full-screen ad when the TV starts
+telemetria    com.tcl.bi                               # coleta de dados de uso da TCL | TCL usage data collection
+telemetria    com.tcl.logkit                           # envio de registros à TCL | sends logs to TCL
+telemetria    com.tcl.repairguide                      # diagnóstico remoto da TCL | TCL remote diagnostics
+telemetria    com.tcl.guard                            # TCL Guard, rastreio de uso | TCL Guard, usage tracking
+telemetria    com.tcl.tvweishi                         # TCL Guard (Android TV) | TCL Guard (Android TV)
+telemetria    com.tcl.usercenter                       # conta TCL | TCL account
+extras        com.tcl.esticker                         # selos de demonstração de loja | store demo stickers
+extras        com.tcl.hotelmenu                        # modo hotel | hotel mode
+extras        com.tcl.notereminder                     # notas na tela inicial | home screen notes
+extras        com.tcl.common.weather                   # previsão do tempo da TCL | TCL weather
+
+apps-tcl      com.tcl.channelplus                      # canais grátis da TCL na TV ao vivo | TCL free channels in live TV
+apps-tcl      com.tcl.tv.plus                          # TCL TV+ | TCL TV+
+apps-tcl      com.tcl.smartalexa                       # Alexa da TCL (o Google Assistente continua) | TCL's Alexa (Google Assistant stays)
+apps-tcl      com.tcl.magiconnectfree                  # T-Cast, app de celular da TCL | T-Cast, TCL's phone app
+apps-tcl      com.tcl.MultiScreenInteraction_TV        # T-Cast (Android TV) | T-Cast (Android TV)
+apps-tcl      com.tcl.appmarket2                       # loja de apps da TCL (a Play Store continua) | TCL app store (Play Store stays)
+apps-tcl      com.tcl.browser                          # navegador da TCL | TCL browser
+apps-tcl      com.tcl.ocean.instructions               # manual eletrônico | e-manual
+
+# Só pelo diagnóstico: cada um desliga um recurso de verdade.
+opcional      com.tcl.ui_mediaCenter                   # player de mídia do USB | USB media player
+opcional      com.tcl.gallery                          # galeria e protetor de tela de fotos | gallery and photo screensaver
+opcional      com.tcl.t_solo                           # ouvir sozinho pelo Bluetooth | Bluetooth "listen alone"
+opcional      com.tcl.hearaid                          # teste de audição | hearing test
+opcional      com.tcl.gamebar                          # barra de jogos | game bar
+opcional      com.tcl.UpdatePeripheral                 # atualização de soundbar TCL | TCL soundbar updates
+opcional      com.tcl.airplay2                         # AirPlay | AirPlay
+opcional      com.mediatek.AirplayAPK                  # AirPlay | AirPlay
+opcional      com.mediatek.airplaydaemon               # AirPlay (serviço) | AirPlay (service)
+opcional      com.tcl.miracast                         # Miracast | Miracast
+
+# Controle por voz: nunca desativado
+voz           com.google.android.katniss               # Assistente e busca por voz | Assistant and voice search
+voz           com.google.android.speech.pumpkin        # reconhecimento de voz | speech recognition

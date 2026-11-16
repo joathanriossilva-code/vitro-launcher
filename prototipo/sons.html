@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sons do Vitro</title>
+<style>
+  /* Prévia dos sons de navegação: uma TV de mentira com a barra do Vitro em cima, e o painel de escolha embaixo.
+     Os sons saem de prototipo/sons/, gerados do zero por prototipo/gerar-sons.py. */
+  :root {
+    --page: #0c0e18;
+    --panel: #151829;
+    --line: rgba(201, 204, 255, 0.14);
+    --text: #e8e9f4;
+    --muted: #9fa3c0;
+    --accent: #c9ccff;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 15px/1.5 var(--font); padding: 20px 16px 48px; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 22px; }
+  h1 { margin: 0; font-size: 1.6rem; font-weight: 700; }
+  .sub { margin: 0; color: var(--muted); max-width: 70ch; }
+
+  /* A TV */
+  .tv {
+    position: relative; aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; overflow: hidden; outline: none;
+    background: #1a1c33 url("../launcher/assets/wallpapers/01b-ondas.jpg") center / cover;
+    box-shadow: 0 0 0 1px var(--line), 0 30px 60px -30px #000; user-select: none; cursor: pointer;
+  }
+  .tv:focus-visible, .tv.live { box-shadow: 0 0 0 2px var(--accent), 0 30px 60px -30px #000; }
+  .clock { position: absolute; left: 3.2%; top: 4%; color: #fff; }
+  .clock .date { font-size: clamp(9px, 1.35vw, 15px); font-weight: 500; opacity: .92; }
+  .clock .time { font-size: clamp(30px, 7.4vw, 82px); font-weight: 800; line-height: 1; letter-spacing: -.01em;
+    color: rgba(255,255,255,.18); -webkit-text-stroke: 1.5px rgba(255,255,255,.75); }
+  .gear { position: absolute; right: 3%; top: 4.5%; display: flex; gap: 4px; padding: 4px; border-radius: 999px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(10px); }
+  .gear span { width: clamp(18px, 2.6vw, 30px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+    color: #fff; font-size: clamp(9px, 1.2vw, 13px); transition: background .12s, transform .12s; }
+  .gear span.focus { background: rgba(255,255,255,.9); color: #222; transform: scale(1.12); }
+  .bar { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); display: flex; gap: 1.6vw; padding: 1.1vw 1.6vw;
+    border-radius: 2vw; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(14px); }
+  .tile { width: clamp(38px, 7.6vw, 86px); aspect-ratio: 16 / 10; border-radius: .9vw; display: grid; place-items: center;
+    font-size: clamp(7px, 1vw, 12px); font-weight: 600; color: #fff; background: rgba(255,255,255,.16);
+    transition: transform .14s cubic-bezier(.2,.8,.2,1), box-shadow .14s; }
+  .tile.focus { transform: scale(1.16); box-shadow: 0 0 0 2px #fff, 0 10px 24px rgba(0,0,0,.45); }
+  .tile.press { transform: scale(1.06); }
+  .t1 { background: #f3f3f3; color: #d22; } .t2 { background: #1f6fd1; } .t3 { background: #fafafa; color: #2b7; }
+  .t4 { background: rgba(60,60,70,.75); } .t5 { background: rgba(255,255,255,.2); }
+  .menu { position: absolute; right: 3%; top: 13%; width: 30%; padding: .8% 0; border-radius: 1.4vw; display: none;
+    background: rgba(40,42,60,.55); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(16px); }
+  .menu.open { display: block; }
+  .menu div { margin: 0 3%; padding: 2.2% 5%; border-radius: 999px; color: #fff; font-size: clamp(8px, 1.15vw, 14px);
+    display: flex; justify-content: space-between; transition: background .12s; }
+  .menu div.focus { background: rgba(255,255,255,.2); font-weight: 600; }
+  .menu div i { font-style: normal; opacity: .65; }
+  .hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); padding: 10px 18px; border-radius: 999px;
+    background: rgba(10,12,22,.7); border: 1px solid rgba(255,255,255,.2); color: #fff; font-size: 14px; backdrop-filter: blur(8px); }
+  .tv.live .hint { display: none; }
+  .flash { position: absolute; left: 3%; bottom: 3%; color: rgba(255,255,255,.75); font-size: clamp(9px, 1.1vw, 13px); }
+
+  /* Painel */
+  .panel { display: grid; gap: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .fams { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+  .fam { text-align: left; font: inherit; color: var(--text); background: rgba(255,255,255,.03); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; cursor: pointer; display: grid; gap: 4px; }
+  .fam strong { font-size: 1.05rem; }
+  .fam span { color: var(--muted); font-size: .9rem; }
+  .fam[aria-pressed="true"] { border-color: var(--accent); background: rgba(201,204,255,.1); }
+  .fam:hover { border-color: rgba(201,204,255,.4); }
+  button.chip { font: inherit; color: var(--text); background: rgba(255,255,255,.05); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  button.chip:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  kbd { font: 12px/1 ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; }
+  .keys { color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  input[type=range] { width: 180px; accent-color: var(--accent); }
+  .note { color: var(--muted); font-size: .9rem; margin: 0; max-width: 80ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sons de navegação do Vitro</h1>
+  <p class="sub">Quatro famílias feitas do zero, por síntese: nenhuma gravação de outro sistema. Clique na TV e navegue
+    pelo teclado como no controle; troque a família embaixo e compare.</p>
+
+  <div class="tv" id="tv" tabindex="0" aria-label="TV de teste: use as setas, Enter e Esc">
+    <div class="clock"><div class="date" id="date"></div><div class="time" id="time"></div></div>
+    <div class="gear"><span id="g0">▣</span><span id="g1">⚙</span></div>
+    <div class="menu" id="menu">
+      <div>Configurações do Fire OS</div><div>Tela inicial da Amazon</div><div>Papel de parede <i>Ondas</i></div>
+      <div>Desligar a TV <i>desligado</i></div><div>Autoreparar</div><div>Sobre</div>
+    </div>
+    <div class="bar" id="bar">
+      <div class="tile t1">YouTube</div><div class="tile t2">Prime</div><div class="tile t3">Play</div>
+      <div class="tile t4">⚙</div><div class="tile t5">Todos</div>
+    </div>
+    <div class="hint">Clique aqui e use as setas, Enter e Esc</div>
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <div class="panel">
+    <div class="keys"><span><kbd>←</kbd> <kbd>→</kbd> mover na barra</span><span><kbd>↑</kbd> ir aos ajustes · <kbd>↓</kbd> voltar à barra</span>
+      <span><kbd>Enter</kbd> OK (no ⚙ de cima abre o menu)</span><span><kbd>Esc</kbd> voltar</span><span>passar do fim da fileira toca o “limite”</span></div>
+
+    <div class="label">Família</div>
+    <div class="fams" id="fams">
+      <button class="fam" data-f="cristal" aria-pressed="true"><strong>Cristal</strong><span>Vidro fino tocado de leve: agudo, brilhante, com um brilho curto no fim.</span></button>
+      <button class="fam" data-f="toque" aria-pressed="false"><strong>Toque</strong><span>Um “toc” macio e curto, de tom quase escondido. O mais neutro.</span></button>
+      <button class="fam" data-f="gota" aria-pressed="false"><strong>Gota</strong><span>Um tom liso que sobe de leve, como uma gota. Voltar e limite descem.</span></button>
+      <button class="fam" data-f="seda" aria-pressed="false"><strong>Seda</strong><span>Quase só ar, um “tsk” agudo. O mais discreto; o OK tem um corpo leve.</span></button>
+    </div>
+
+    <div class="label">Ouvir cada som</div>
+    <div class="row">
+      <button class="chip" data-r="mover">Mover</button><button class="chip" data-r="ok">OK</button>
+      <button class="chip" data-r="voltar">Voltar</button><button class="chip" data-r="limite">Limite</button>
+      <button class="chip" id="fast">Navegação rápida (10 passos)</button>
+      <button class="chip" id="all">A família inteira</button>
+    </div>
+
+    <div class="row">
+      <label class="row" for="vol">Volume <input type="range" id="vol" min="0" max="100" value="70"></label>
+      <label class="row" for="vary"><input type="checkbox" id="vary" checked> Variação leve de tom a cada passo</label>
+    </div>
+    <p class="note">Na TV os sons vão sair pelo mesmo caminho do som dos apps, com volume próprio bem baixo e uma linha
+      “Sons” no menu para ligar e desligar. Segurar a seta repete o “mover” no máximo a cada 60 ms, para não virar uma
+      metralhadora. A variação leve de tom (±3%) evita que a navegação longa soe mecânica.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const FAMS = ['cristal', 'toque', 'gota', 'seda'], ROLES = ['mover', 'ok', 'voltar', 'limite'];
+  const NAMES = { mover: 'mover', ok: 'OK', voltar: 'voltar', limite: 'limite' };
+  let ctx = null, fam = 'cristal', lastMove = 0;
+  const buffers = {};
+  window.vitroSons = { buffers, loaded: () => Object.keys(buffers).length };
+
+  async function load() {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') await ctx.resume();
+    if (Object.keys(buffers).length) return;
+    await Promise.all(FAMS.flatMap(f => ROLES.map(async r => {
+      const res = await fetch('sons/' + f + '-' + r + '.wav');
+      buffers[f + '-' + r] = await ctx.decodeAudioData(await res.arrayBuffer());
+    })));
+  }
+
+  async function play(role) {
+    await load();
+    const now = performance.now();
+    if (role === 'mover') { if (now - lastMove < 60) return; lastMove = now; }
+    const src = ctx.createBufferSource(), gain = ctx.createGain();
+    src.buffer = buffers[fam + '-' + role];
+    if (document.getElementById('vary').checked) src.playbackRate.value = 0.97 + Math.random() * 0.06;
+    gain.gain.value = document.getElementById('vol').value / 100;
+    src.connect(gain).connect(ctx.destination);
+    src.start();
+    const fl = document.getElementById('flash');
+    fl.textContent = fam.charAt(0).toUpperCase() + fam.slice(1) + ' · ' + NAMES[role];
+  }
+
+  // Relógio
+  function tick() {
+    const d = new Date();
+    document.getElementById('time').textContent = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const s = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.getElementById('date').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  tick(); setInterval(tick, 10000);
+
+  // Navegação na TV de mentira
+  const tv = document.getElementById('tv'), tiles = [...document.querySelectorAll('.tile')];
+  const gears = [document.getElementById('g0'), document.getElementById('g1')];
+  const menu = document.getElementById('menu'), items = [...menu.children];
+  let zone = 'bar', bi = 0, gi = 1, mi = 0;
+
+  function paint() {
+    tiles.forEach((t, i) => t.classList.toggle('focus', zone === 'bar' && i === bi));
+    gears.forEach((g, i) => g.classList.toggle('focus', zone === 'gear' && i === gi));
+    menu.classList.toggle('open', zone === 'menu');
+    items.forEach((m, i) => m.classList.toggle('focus', zone === 'menu' && i === mi));
+  }
+
+  function key(k) {
+    if (zone === 'bar') {
+      if (k === 'ArrowLeft') { if (bi > 0) { bi--; play('mover'); } else play('limite'); }
+      else if (k === 'ArrowRight') { if (bi < tiles.length - 1) { bi++; play('mover'); } else play('limite'); }
+      else if (k === 'ArrowUp') { zone = 'gear'; play('mover'); }
+      else if (k === 'ArrowDown') play('limite');
+      else if (k === 'Enter') { play('ok'); const t = tiles[bi]; t.classList.add('press'); setTimeout(() => t.classList.remove('press'), 120); }
+      else if (k === 'Escape' || k === 'Backspace') play('voltar');
+    } else if (zone === 'gear') {
+      if (k === 'ArrowLeft') { if (gi > 0) { gi--; play('mover'); } else play('limite'); }
+      else if (k === 'ArrowRight') { if (gi < 1) { gi++; play('mover'); } else play('limite'); }
+      else if (k === 'ArrowDown') { zone = 'bar'; play('mover'); }
+      else if (k === 'ArrowUp') play('limite');
+      else if (k === 'Enter') { play('ok'); if (gi === 1) { zone = 'menu'; mi = 0; } }
+      else if (k === 'Escape' || k === 'Backspace') { zone = 'bar'; play('voltar'); }
+    } else {
+      if (k === 'ArrowUp') { if (mi > 0) { mi--; play('mover'); } else play('limite'); }
+      else if (k === 'ArrowDown') { if (mi < items.length - 1) { mi++; play('mover'); } else play('limite'); }
+      else if (k === 'ArrowLeft' || k === 'ArrowRight') play('limite');
+      else if (k === 'Enter') play('ok');
+      else if (k === 'Escape' || k === 'Backspace') { zone = 'gear'; play('voltar'); }
+    }
+    paint();
+  }
+
+  tv.addEventListener('keydown', e => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Backspace'].includes(e.key)) {
+      e.preventDefault(); key(e.key);
+    }
+  });
+  tv.addEventListener('focus', () => { tv.classList.add('live'); load(); });
+  tv.addEventListener('blur', () => tv.classList.remove('live'));
+  tv.addEventListener('click', () => tv.focus());
+  paint();
+
+  // Painel
+  document.querySelectorAll('.fam').forEach(b => b.addEventListener('click', () => {
+    fam = b.dataset.f;
+    document.querySelectorAll('.fam').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    play('ok');
+  }));
+  document.querySelectorAll('[data-r]').forEach(b => b.addEventListener('click', () => { lastMove = 0; play(b.dataset.r); }));
+  document.getElementById('fast').addEventListener('click', async () => {
+    await load();
+    for (let i = 0; i < 10; i++) setTimeout(() => { lastMove = 0; play(i === 9 ? 'ok' : 'mover'); }, i * 90);
+  });
+  document.getElementById('all').addEventListener('click', async () => {
+    await load();
+    ROLES.forEach((r, i) => setTimeout(() => { lastMove = 0; play(r); }, i * 550));
+  });
+})();
+</script>
+</body>
+</html>

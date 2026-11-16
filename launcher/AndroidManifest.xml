@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="app.vitro.launcher" android:versionCode="15" android:versionName="0.4.0">
+    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="28" />
+    <!-- Só para falar com o ADB da própria TV, pelo túnel local (ver Tunnel). Nada sai da TV. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Conferir se outra VPN está ligada antes de ligar o túnel local (ver Tunnel). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Opcional, concedida pelo ADB na primeira configuração: perceber o Home no registro do sistema, antes de a
+         tela da Amazon desenhar. Só são lidas as linhas do ActivityManager; nada é guardado. -->
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <!-- Manter o processador acordado por alguns segundos quando o alarme da janela de atualização do Prime
+         Video toca com a TV em espera (ver Upkeep). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Autorreparo (ver Repair): concedida uma vez por adb, deixa o Vitro religar o próprio serviço do botão Home,
+         a depuração ADB e o alarme imediato se uma atualização do Fire OS os desligar. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- Autorreparo a cada vez que a TV liga, mesmo com o serviço do Home desligado. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <application android:label="Vitro" android:icon="@drawable/banner" android:banner="@drawable/banner"
+        android:allowBackup="false" android:hardwareAccelerated="true"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <activity android:name=".HomeActivity"
+            android:exported="true"
+            android:launchMode="singleTask" android:stateNotNeeded="true"
+            android:clearTaskOnLaunch="true" android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|locale">
+            <!-- Tela inicial de verdade em Android TV e Google TV. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- Aparece na lista de apps do Fire TV. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- Primeira configuração numa Fire TV ainda não preparada (só o próprio Vitro a abre). -->
+        <activity android:name=".SetupActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|locale" />
+        <!-- Sobre: créditos e a escolha do idioma (só o próprio Vitro a abre). -->
+        <activity android:name=".AboutActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|locale" />
+        <!-- Botão Home do controle abre o Vitro. Fica desligado até ser ativado nas opções de acessibilidade. -->
+        <service android:name=".HomeService"
+            android:label="@string/home_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/home_service" />
+        </service>
+        <!-- Autorreparo ao ligar a TV e ao atualizar o Vitro (só o sistema envia esses avisos). -->
+        <receiver android:name=".Repair$Boot" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <!-- Timer de desligamento: aviso um minuto antes e a hora de pôr a TV para dormir (só o Vitro os dispara). -->
+        <receiver android:name=".SleepTimer$Alarm" android:exported="false" />
+        <!-- Alarmes da janela semanal de atualização do Prime Video (só o próprio Vitro os dispara). -->
+        <receiver android:name=".Upkeep$Alarm" android:exported="false" />
+        <!-- Testes da manutenção pelo adb: só quem tem a permissão DUMP (o shell do adb, o sistema) consegue enviar. -->
+        <receiver android:name=".Upkeep$Diag" android:exported="true" android:permission="android.permission.DUMP" />
+        <!-- Túnel local: rede privada só dentro da TV, usada só pelo Vitro para falar com o ADB da TV. -->
+        <service android:name=".Tunnel"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo de liquid glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page: #0f1013; --panel: #17181d; --text: #e3e4ea; --muted: #8d8f9b; --line: #2b2d36; --accent: #6ea8ff;
+    --font: "Inter", -apple-system, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --page: #f2f2ef; --panel: #ffffff; --text: #1f2027; --muted: #6a6c78; --line: #d9d9d3; --accent: #1f62d0; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--page); color: var(--text); font-family: var(--font); }
+  #frame { position: relative; margin: 0 auto; overflow: hidden; border-radius: 8px; background: #000; }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #ui { position: absolute; left: 0; top: 0; width: 960px; height: 540px; transform-origin: 0 0; color: #fff; user-select: none; }
+  .date { position: absolute; left: 48px; top: 30px; font-size: 19px; font-weight: 500; opacity: .86; text-shadow: 0 1px 10px rgba(0,0,0,.35); }
+  .date::first-letter { text-transform: uppercase; }
+  .clock { position: absolute; left: 45px; top: 52px; font-size: 104px; line-height: 1.05; font-weight: 600; letter-spacing: -4px; font-feature-settings: "tnum"; text-shadow: 0 2px 24px rgba(0,0,0,.28); }
+
+  /* Barra de apps */
+  #dock { position: absolute; left: 108px; top: 410px; width: 744px; height: 84px; display: flex; }
+  .item { width: 93px; height: 84px; display: flex; align-items: center; justify-content: center; cursor: pointer; will-change: transform; }
+  .item .in {
+    display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.1;
+    font-size: 14px; font-weight: 600; letter-spacing: -.2px; color: #fff; opacity: .8;
+    text-shadow: 0 1px 6px rgba(0,0,0,.35); transition: opacity 180ms ease; will-change: transform;
+  }
+  .item.focus .in { opacity: 1; }
+  .banners .item .in { width: 72px; height: 41px; border-radius: 9px; font-size: 10.5px; padding: 0 4px; text-shadow: none; opacity: .92; background: var(--b); color: var(--c); }
+  .banners .item.focus .in { opacity: 1; box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+  #ui.pill:not(.banners) .item.focus .in { color: #15161b; text-shadow: none; }
+
+  /* Atalhos do topo */
+  #top { position: absolute; left: 808px; top: 27px; width: 104px; height: 44px; display: flex; align-items: center; justify-content: space-evenly; }
+  .tbtn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; opacity: .88; cursor: pointer; transition: background 140ms ease, color 140ms ease, transform 140ms ease; }
+  .tbtn svg { width: 20px; height: 20px; display: block; }
+  .tbtn.focus { background: rgba(255,255,255,.26); box-shadow: inset 0 1px 0 rgba(255,255,255,.22); color: #fff; opacity: 1; transform: scale(1.08); }
+
+  /* Menus no padrão do iOS: o destaque é uma cápsula semitransparente que desliza entre as linhas;
+     o texto continua branco, ícone à esquerda, divisor entre grupos e ação destrutiva em vermelho. */
+  .rows { position: absolute; opacity: 0; pointer-events: none; }
+  .rows.open { pointer-events: auto; }
+  .hl {
+    position: absolute; left: 0; right: 0; top: 0; height: 46px; border-radius: 999px;
+    background: rgba(255,255,255,.2); box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+    transition: transform 220ms cubic-bezier(.2,.9,.25,1.12), height 220ms ease, opacity 160ms ease;
+  }
+  .hl.dim { opacity: .45; }
+  .r {
+    position: relative; height: 46px; padding: 0 16px; display: flex; align-items: center; gap: 13px;
+    font-size: 17px; font-weight: 400; color: #fff; opacity: .9; cursor: pointer; text-shadow: 0 1px 4px rgba(0,0,0,.25);
+    transition: opacity 140ms ease, transform 180ms ease;
+  }
+  .r svg { width: 21px; height: 21px; flex: none; }
+  .r span { white-space: nowrap; }
+  .r small { margin-left: auto; font-size: 15px; opacity: .7; }
+  .r.red { color: #ff8f9a; }
+  .r.off { opacity: .35; }
+  .r.focus { opacity: 1; font-weight: 500; transform: scale(1.02); }
+  .r.focus.off { opacity: .5; }
+  .sep { height: 1px; margin: 6px 16px; background: rgba(255,255,255,.16); }
+  #menu { left: 620px; top: 35px; width: 284px; }
+  #ctx { top: 199px; width: 254px; }
+  #ctx .r, #ctx .hl { height: 44px; }
+  #ctx .r { font-size: 16px; padding: 0 14px; }
+
+  /* Gaveta de apps */
+  #drawer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+  #drawer.open { pointer-events: auto; }
+  #drawer h2 { position: absolute; left: 80px; top: 52px; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.4px; }
+  #grid { position: absolute; left: 80px; top: 108px; display: grid; grid-template-columns: repeat(5, 140px); column-gap: 25px; row-gap: 30px; }
+  .tile {
+    width: 140px; height: 79px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 600; letter-spacing: -.2px; background: var(--b); color: var(--c); opacity: .9; cursor: pointer;
+    transition: transform 160ms cubic-bezier(.2,.8,.2,1), box-shadow 160ms ease, opacity 160ms ease;
+  }
+  .tile.focus { opacity: 1; transform: scale(1.1); box-shadow: 0 18px 30px -10px var(--g), 0 8px 18px rgba(0,0,0,.4); }
+  .dhint { position: absolute; left: 80px; top: 462px; margin: 0; font-size: 15px; opacity: .72; }
+
+  #said { margin: 10px auto 0; min-height: 1.4em; font-size: 14px; color: var(--muted); text-align: center; }
+  #panel { margin: 6px auto 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .box h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; font-size: 14px; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--text); color: var(--page); border-color: var(--text); }
+  .seg button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: grid; grid-template-columns: 84px 1fr 34px; align-items: center; gap: 8px; font-size: 14px; margin: 5px 0; }
+  .row output { text-align: right; color: var(--muted); font-feature-settings: "tnum"; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+  .stack { display: grid; gap: 10px; }
+  kbd { font: inherit; border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; color: var(--text); }
+</style>
+</head>
+<body>
+<div id="frame">
+  <canvas id="gl"></canvas>
+  <div id="ui">
+    <div class="date" id="date"></div>
+    <div class="clock" id="clock">00:00</div>
+    <div id="top">
+      <div class="tbtn" data-t="0" aria-label="Trocar papel de parede">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 15.5l-4.5-4.5L8 19.5"/></svg>
+      </div>
+      <div class="tbtn" data-t="1" aria-label="Ajustes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M19 7h1M4 12h2M12 12h8M4 17h7M17 17h3"/><circle cx="16" cy="7" r="2.4"/><circle cx="9" cy="12" r="2.4"/><circle cx="14" cy="17" r="2.4"/></svg>
+      </div>
+    </div>
+    <div id="menu" class="rows"></div>
+    <div id="dock"></div>
+    <div id="ctx" class="rows"></div>
+    <div id="drawer">
+      <h2>Todos os apps</h2>
+      <div id="grid"></div>
+      <p class="dhint">Segure OK sobre um app para fixá-lo na barra</p>
+    </div>
+  </div>
+</div>
+<p id="said" aria-live="polite"></p>
+
+<div id="panel">
+  <div class="box">
+    <h2>Wallpaper</h2>
+    <div class="seg" id="wall" role="group" aria-label="Wallpaper">
+      <button data-v="3">Órbita</button><button data-v="1">Dunas</button><button data-v="0">Aurora</button><button data-v="2">Seda</button>
+    </div>
+    <p class="note" id="wallnote"></p>
+    <p class="note"><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> movem o foco. <kbd>Enter</kbd> é o OK. Segure <kbd>Enter</kbd> ou tecle <kbd>M</kbd> para o menu do app. <kbd>Esc</kbd> volta.</p>
+  </div>
+  <div class="box stack">
+    <div><h2>Variante do vidro</h2>
+      <div class="seg" id="variant" role="group" aria-label="Variante do vidro"><button data-v="clear">Clear</button><button data-v="regular">Regular</button></div></div>
+    <div><h2>Foco</h2>
+      <div class="seg" id="focus" role="group" aria-label="Estilo do foco"><button data-v="glow">Brilho na base</button><button data-v="lens">Lente sobre vidro</button><button data-v="pill">Pílula opaca</button><button data-v="solo">Vidro só no foco</button></div>
+      <p class="note" id="focusnote"></p></div>
+    <div><h2>Apps</h2>
+      <div class="seg" id="icons" role="group" aria-label="Estilo dos apps"><button data-v="mono">Marcas brancas</button><button data-v="banners">Banners coloridos</button></div></div>
+  </div>
+  <div class="box">
+    <h2>Ajuste fino</h2>
+    <div class="row"><label for="refr">Refração</label><input id="refr" type="range" min="0" max="60" step="1"><output></output></div>
+    <div class="row"><label for="bezel">Borda</label><input id="bezel" type="range" min="4" max="40" step="1"><output></output></div>
+    <div class="row"><label for="frost">Desfoque</label><input id="frost" type="range" min="0" max="100" step="1"><output></output></div>
+    <div class="row"><label for="spec">Brilho</label><input id="spec" type="range" min="0" max="100" step="1"><output></output></div>
+    <div class="row"><label for="disp">Dispersão</label><input id="disp" type="range" min="0" max="40" step="1"><output></output></div>
+    <div class="row"><label for="mag">Ampliação</label><input id="mag" type="range" min="100" max="170" step="1"><output></output></div>
+    <div class="row"><label for="reach">Alcance</label><input id="reach" type="range" min="10" max="30" step="1"><output></output></div>
+    <div class="row"><label for="light">Luz do foco</label><input id="light" type="range" min="0" max="150" step="1"><output></output></div>
+    <div class="seg" style="margin-top:10px"><button id="reset" type="button">Restaurar padrões</button></div>
+    <p class="note">Os nomes em texto são provisórios: no aparelho entram as marcas e os banners dos próprios apps.</p>
+  </div>
+</div>
+
+<script>
+// Nomes em texto só para o protótipo: no aparelho cada bloco mostra o banner do próprio app.
+const ALL = [
+  ['Netflix', '#17181c', '#f0504a'], ['YouTube', '#f3f0ea', '#1b1b1f'], ['Prime Video', '#1b3a5f', '#fff'],
+  ['Globoplay', '#e9642f', '#fff'], ['Disney+', '#11264d', '#fff'], ['Spotify', '#1f8a50', '#fff'],
+  ['Max', '#3b1f8f', '#fff'], ['Pluto TV', '#f6cf45', '#1b1b1f'], ['Twitch', '#7a4bd8', '#fff'],
+  ['Kodi', '#2a7db5', '#fff'], ['VLC', '#e2852c', '#1b1b1f'], ['Downloader', '#c9582a', '#fff'],
+  ['Navegador', '#2e6f69', '#fff'], ['Arquivos', '#3f4859', '#fff'], ['Appstore', '#e8a33a', '#1b1b1f'],
+];
+const APPS = ALL.slice(0, 7).concat([['Todos', 'rgba(255,255,255,.2)', '#fff']]);
+const LAST = APPS.length - 1, COLS = 5;
+const WALL_ORDER = [3, 1, 0, 2];
+const WALL_NAMES = { 3: 'Órbita', 1: 'Dunas', 0: 'Aurora', 2: 'Seda' };
+const WALL_NOTES = {
+  3: 'Horizonte de um planeta visto da órbita, no espírito dos protetores de tela aéreos. Ideia: fundo escuro, um ponto de luz forte e uma linha nítida para o vidro refratar.',
+  1: 'Camadas de dunas em tons quentes. As cristas dão ao vidro bordas claras para dobrar.',
+  0: 'Campos de cor fundidos. Elegante, mas tão suave que a refração quase não aparece.',
+  2: 'Faixas de luz sobre fundo escuro, com cara de produto "Pro".',
+};
+const FOCUS_NOTES = {
+  glow: 'Barra de vidro sem lente: o app em foco cresce e uma luz suave, puxada para a cor do app, aparece sob ele e acende a borda da barra.',
+  lens: 'Vidro sobre vidro: uma lente dentro do dock. É o que a Apple pede para evitar.',
+  pill: 'Barra de abas do tvOS: a barra é vidro e o item em foco vira uma pílula opaca com sombra. Pensada para rótulos de uma cor só.',
+  solo: 'Tela inicial do tvOS: os apps ficam direto sobre o fundo, sem barra. Só o item em foco ganha vidro, elevação e brilho.',
+};
+const ICONS = {
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  home: '<path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 10v9.5h12V10"/>',
+  image: '<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 15.5l-4.5-4.5L8 19.5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.7" r=".5" fill="currentColor"/>',
+  left: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  right: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+};
+// null marca o divisor entre grupos; a ação destrutiva fica por último, separada e em vermelho.
+const MENU = [
+  { t: 'Configurações do Fire OS', i: 'gear' }, { t: 'Tela inicial da Amazon', i: 'home' }, null,
+  { t: 'Papel de parede', i: 'image', detail: 'wallname' }, { t: 'Sobre este launcher', i: 'info' },
+];
+const CTX = [
+  { t: 'Mover para a esquerda', i: 'left' }, { t: 'Mover para a direita', i: 'right' }, { t: 'Informações do app', i: 'info' }, null,
+  { t: 'Tirar da barra', i: 'trash', red: true },
+];
+const MENU_N = 4, CTX_N = 4;
+
+const S = { wall: 3, variant: 'clear', focus: 'glow', icons: 'banners', refr: 26, bezel: 18, frost: 30, spec: 70, disp: 14, mag: 145, reach: 25, light: 60, i: 0 };
+// Guarda as escolhas no navegador para o ajuste sobreviver a um recarregamento.
+try {
+  const saved = JSON.parse(localStorage.getItem('vidro-demo') || '{}');
+  for (const k of Object.keys(S)) if (k !== 'i' && typeof saved[k] === typeof S[k]) S[k] = saved[k];
+  if (!FOCUS_NOTES[S.focus]) S.focus = 'glow';
+} catch (e) {}
+function save() { try { localStorage.setItem('vidro-demo', JSON.stringify(S)); } catch (e) {} }
+
+const DOCK = { cx: 480, cy: 452, hh: 42, r: 42 };
+const SHEET = { cx: 480, cy: 270, hw: 432, hh: 243, r: 36 };
+const TOP_PILL = { cx: 860, cy: 49, hw: 52, hh: 22, r: 22 };
+const TOP_MENU = { cx: 762, cy: 133.5, hw: 150, hh: 106.5, r: 30 };
+const CTX_BOX = { cy: 293.5, hw: 135, hh: 102.5, r: 29 };
+const ITEM_W = 93, DOCK_LEFT = 108, REST0 = DOCK_LEFT + ITEM_W / 2, LENS = { hw: 44.5, hh: 34, r: 34 };
+
+const $ = (id) => document.getElementById(id);
+const frame = $('frame'), canvas = $('gl'), ui = $('ui'), dock = $('dock');
+const topEl = $('top'), menuEl = $('menu'), ctxEl = $('ctx'), drawerEl = $('drawer'), grid = $('grid');
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const mix = (a, b, t) => a + (b - a) * t;
+
+// Onde o foco está. O controle remoto só tem setas, OK, Voltar e Menu, então tudo é uma máquina de zonas.
+const UI = { zone: 'dock', top: 1, menu: 0, ctx: 0, grid: 0 };
+
+// Cor da luz de cada app: a mais viva entre fundo e texto do banner, clareada. No aparelho sai da cor dominante do banner.
+function rgb(hex) {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex);
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+  return [0, 2, 4].map((n) => parseInt(h.slice(n, n + 2), 16) / 255);
+}
+function accent(a) {
+  const pick = [rgb(a[1]), rgb(a[2])].find((c) => c && Math.max(...c) - Math.min(...c) > 0.2) || [1, 1, 1];
+  const top = Math.max(...pick);
+  return pick.map((v) => (v / top) * 0.68 + 0.32);
+}
+let ACCENT = [];
+
+APPS.forEach((a, i) => {
+  const el = document.createElement('div');
+  el.className = 'item'; el.dataset.i = i;
+  el.innerHTML = '<div class="in"></div>';
+  dock.appendChild(el);
+});
+const items = [...dock.children], inner = items.map((el) => el.firstChild);
+function renderDock() {
+  APPS.forEach((a, i) => {
+    inner[i].textContent = a[0];
+    inner[i].style.setProperty('--b', a[1]); inner[i].style.setProperty('--c', a[2]);
+  });
+  ACCENT = APPS.map(accent);
+}
+renderDock();
+
+ALL.forEach((a, i) => {
+  const el = document.createElement('div');
+  el.className = 'tile'; el.dataset.g = i; el.textContent = a[0];
+  const g = accent(a).map((v) => Math.round(v * 255));
+  el.style.setProperty('--b', a[1]); el.style.setProperty('--c', a[2]);
+  el.style.setProperty('--g', 'rgba(' + g.join(',') + ',.7)');
+  grid.appendChild(el);
+});
+function rowsHtml(list, attr) {
+  let n = 0;
+  return '<div class="hl"></div>' + list.map((row) => {
+    if (!row) return '<div class="sep"></div>';
+    return '<div class="r' + (row.red ? ' red' : '') + '" data-' + attr + '="' + (n++) + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[row.i] + '</svg>' +
+      '<span>' + row.t + '</span>' + (row.detail ? '<small id="' + row.detail + '"></small>' : '') + '</div>';
+  }).join('');
+}
+menuEl.innerHTML = rowsHtml(MENU, 'm');
+ctxEl.innerHTML = rowsHtml(CTX, 'c');
+const menuRows = [...menuEl.querySelectorAll('.r')], ctxRows = [...ctxEl.querySelectorAll('.r')];
+// A cápsula de destaque é uma só por menu e desliza até a linha em foco.
+function slide(box, rows, index, dim) {
+  const hl = box.firstChild, row = rows[index];
+  hl.style.transform = 'translateY(' + row.offsetTop + 'px)';
+  hl.classList.toggle('dim', !!dim);
+}
+
+const VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.0,1.0);}';
+
+const FS_WALL = `
+precision highp float;
+uniform vec2 u_res; uniform int u_kind;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}
+float fbm(vec2 p){float a=0.5,s=0.0;for(int i=0;i<5;i++){s+=a*noise(p);p*=2.02;a*=0.5;}return s;}
+
+vec3 aurora(vec2 uv){
+  vec2 w=uv+0.30*vec2(fbm(uv*1.1+vec2(3.1,0.0)),fbm(uv*1.1+vec2(0.0,7.7)))-0.15;
+  vec3 c=vec3(0.04,0.05,0.22);
+  c=mix(c,vec3(0.10,0.32,0.98),smoothstep(1.0,0.1,length(w-vec2(0.40,0.95))));
+  c=mix(c,vec3(0.62,0.20,0.90),smoothstep(0.8,0.05,length(w-vec2(1.15,0.55)))*0.85);
+  c=mix(c,vec3(0.98,0.30,0.50),smoothstep(0.7,0.05,length(w-vec2(1.55,0.20)))*0.9);
+  c=mix(c,vec3(1.0,0.66,0.28),smoothstep(0.45,0.0,length(w-vec2(1.85,-0.05))));
+  c=mix(c,vec3(0.25,0.85,0.95),smoothstep(0.5,0.0,length(w-vec2(0.05,0.10)))*0.55);
+  return c;
+}
+vec3 dunas(vec2 uv){
+  vec3 c=mix(vec3(0.99,0.78,0.56),vec3(0.42,0.27,0.55),smoothstep(0.35,1.0,uv.y));
+  c=mix(c,vec3(1.0,0.90,0.72),exp(-length(uv-vec2(1.30,0.66))*5.0)*0.8);
+  for(int i=0;i<5;i++){
+    float fi=float(i);
+    float h=0.60-fi*0.125+0.085*sin(uv.x*(1.25+fi*0.42)+fi*1.9)+0.035*sin(uv.x*(2.9+fi*0.9)+fi*4.2);
+    float m=smoothstep(h+0.003,h-0.003,uv.y);
+    vec3 top=mix(vec3(0.97,0.62,0.40),vec3(0.24,0.10,0.26),fi/4.0);
+    float shade=smoothstep(h,h-0.30,uv.y);
+    c=mix(c,mix(top*1.14,top*0.60,shade),m);
+  }
+  return c;
+}
+vec3 seda(vec2 uv){
+  vec3 c=vec3(0.012,0.016,0.045);
+  for(int i=0;i<4;i++){
+    float fi=float(i);
+    float y=0.44+0.20*sin(uv.x*1.55+fi*1.25+0.6*sin(uv.x*0.9+fi*2.0))+(fi-1.5)*0.085;
+    float d=uv.y-y;
+    float fold=d<0.0?exp(d*4.5):exp(-d*42.0);
+    vec3 hue=mix(vec3(0.08,0.34,1.0),vec3(0.78,0.24,0.95),fi/3.0);
+    c+=hue*fold*0.36+vec3(0.82,0.9,1.0)*exp(-d*d*1400.0)*0.22;
+  }
+  return c;
+}
+vec3 orbita(vec2 uv){
+  vec2 c0=vec2(0.889,-1.52); float R=1.95;
+  float d=length(uv-c0)-R;
+  vec2 sun=c0+R*normalize(vec2(0.42,1.0));
+  float ds=length(uv-sun);
+  vec3 col=vec3(0.006,0.008,0.022);
+  col+=vec3(step(0.9972,hash(floor(uv*260.0))))*0.6*smoothstep(0.02,0.3,d);
+  if(d>0.0){
+    col+=vec3(0.16,0.44,1.0)*exp(-d*15.0)*0.95;
+    col+=vec3(0.75,0.9,1.0)*exp(-d*120.0)*0.9;
+  }else{
+    float lit=exp(d*5.0);
+    float cl=fbm(uv*vec2(3.0,8.0)+vec2(1.7,0.3));
+    col=mix(vec3(0.004,0.010,0.035),vec3(0.05,0.22,0.56),lit);
+    col+=vec3(0.6,0.76,0.92)*smoothstep(0.48,0.8,cl)*lit*0.38;
+    col+=vec3(0.75,0.9,1.0)*exp(d*90.0)*0.6;
+  }
+  col+=vec3(1.0,0.80,0.58)*exp(-ds*7.0)*0.55+vec3(1.0)*exp(-ds*40.0)*0.9;
+  return col;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res.y;
+  vec3 c;
+  if(u_kind==0)c=aurora(uv);else if(u_kind==1)c=dunas(uv);else if(u_kind==2)c=seda(uv);else c=orbita(uv);
+  c+=(hash(gl_FragCoord.xy+0.5)-0.5)/150.0;
+  gl_FragColor=vec4(c,1.0);
+}`;
+
+const FS_BLUR = `
+precision highp float;
+uniform sampler2D u_tex; uniform vec2 u_size; uniform vec2 u_step;
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_size;
+  vec3 c=texture2D(u_tex,uv).rgb*0.2270270270;
+  c+=(texture2D(u_tex,uv+u_step*1.3846153846).rgb+texture2D(u_tex,uv-u_step*1.3846153846).rgb)*0.3162162162;
+  c+=(texture2D(u_tex,uv+u_step*3.2307692308).rgb+texture2D(u_tex,uv-u_step*3.2307692308).rgb)*0.0702702703;
+  gl_FragColor=vec4(c,1.0);
+}`;
+
+// O vidro: refração na borda (SDF de retângulo arredondado), desfoque pré-calculado, brilho especular e sombra.
+// Mesma matemática que vai para o OpenGL ES do aparelho. Três peças de vidro, nunca empilhadas:
+// a barra (que se abre na gaveta), os atalhos do topo (que se abrem no menu de ajustes) e o menu do app.
+const FS_GLASS = `
+precision highp float;
+uniform sampler2D u_wall,u_blur;
+uniform vec2 u_res; uniform float u_px;
+uniform vec4 u_dock; uniform vec4 u_dockP;
+uniform vec4 u_lens; uniform float u_lensR; uniform float u_lensGlass; uniform float u_vis;
+uniform vec3 u_glow; uniform vec3 u_glowCol;
+uniform vec4 u_top; uniform vec3 u_topP;
+uniform vec4 u_ctx; uniform vec3 u_ctxP;
+uniform vec2 u_scrim;
+uniform float u_refr,u_bezel,u_frost,u_tint,u_spec,u_disp;
+
+float sdRR(vec2 p,vec2 h,float r){vec2 q=abs(p)-(h-vec2(r));return length(max(q,0.0))+min(max(q.x,q.y),0.0)-r;}
+vec2 gradRR(vec2 p,vec2 h,float r){
+  vec2 q=abs(p)-(h-vec2(r));
+  vec2 s=vec2(p.x<0.0?-1.0:1.0,p.y<0.0?-1.0:1.0);
+  if(q.x>=0.0||q.y>=0.0)return s*normalize(max(q,0.0)+0.00001);
+  float gx=step(q.y,q.x);return s*vec2(gx,1.0-gx);
+}
+vec3 bg(vec2 p,float frost){
+  vec2 uv=vec2(p.x,u_res.y-p.y)/u_res;
+  return mix(texture2D(u_wall,uv).rgb,texture2D(u_blur,uv).rgb,frost);
+}
+// Menus têm muito texto: pedem a variante mais fosca e um escurecimento, como a Apple recomenda.
+float heavy(float k){return mix(u_frost,max(u_frost,0.92),k);}
+vec4 glass(vec2 p,vec4 shape,float r,float bezel,float amount,float frost,float tint,float specK,float dim){
+  vec2 c=p-shape.xy;vec2 h=shape.zw;
+  float sd=sdRR(c,h,r);
+  float cov=clamp(0.5-sd,0.0,1.0);
+  if(cov<=0.0)return vec4(0.0);
+  float t=clamp(1.0+sd/bezel,0.0,1.0);
+  float d=(1.0-sqrt(1.0-t*t))*amount;
+  vec2 off=-d*gradRR(c,h,min(r*1.5,min(h.x,h.y)));
+  vec3 col;
+  col.r=bg(p+off*(1.0+u_disp),frost).r;
+  col.g=bg(p+off,frost).g;
+  col.b=bg(p+off*(1.0-u_disp),frost).b;
+  col*=1.0-dim;
+  col=mix(col,vec3(1.0),tint);
+  col+=0.05*(1.0-smoothstep(-h.y,h.y*0.2,c.y));
+  float rim=1.0-smoothstep(0.2,1.7*u_px,-sd);
+  float nd=dot(gradRR(c,h,r),normalize(vec2(-0.55,-0.83)));
+  col+=rim*(0.10+pow(abs(nd),2.4)*specK);
+  return vec4(col,cov);
+}
+vec3 over(vec3 col,vec2 p,vec4 shape,vec3 P){
+  if(P.y<=0.001)return col;
+  float sd=sdRR(p-shape.xy-vec2(0.0,6.0*u_px),shape.zw,P.x);
+  col*=1.0-0.30*P.y*(0.35+0.65*P.z)*exp(-max(sd,0.0)/(18.0*u_px));
+  vec4 t=glass(p,shape,P.x,u_bezel*0.7*u_px,u_refr*u_px,heavy(P.z),u_tint+0.03*P.z,u_spec,0.50*P.z);
+  return mix(col,t.rgb,t.a*P.y);
+}
+void main(){
+  vec2 p=vec2(gl_FragCoord.x,u_res.y-gl_FragCoord.y);
+  vec3 col=bg(p,0.0);
+  float open=u_dockP.z;
+  vec4 g=vec4(0.0);
+  if(u_dockP.y>0.001){
+    float sdD=sdRR(p-u_dock.xy-vec2(0.0,7.0*u_px),u_dock.zw,u_dockP.x);
+    col*=1.0-0.32*u_dockP.y*exp(-max(sdD,0.0)/(16.0*u_px));
+    g=glass(p,u_dock,u_dockP.x,u_bezel*u_px,u_refr*u_px,heavy(open),u_tint,u_spec,0.36*open);
+    g.a*=u_dockP.y;
+    col=mix(col,g.rgb,g.a);
+  }
+  float inside=mix(1.0,g.a,u_dockP.w)*u_vis;
+  float sdL=sdRR(p-u_lens.xy,u_lens.zw,u_lensR);
+  float sh=sdRR(p-u_lens.xy-vec2(0.0,4.0*u_px),u_lens.zw,u_lensR);
+  if(u_lensGlass>1.5){
+    // Brilho na base: uma luz sob o app em foco, contida na barra, que também acende a borda inferior do vidro.
+    vec2 d=p-u_glow.xy;
+    float sx=u_glow.z*u_glow.z;
+    float halo=exp(-d.x*d.x/sx-d.y*d.y/(196.0*u_px*u_px));
+    float core=exp(-d.x*d.x/(sx*0.45)-d.y*d.y/(10.0*u_px*u_px));
+    float sdK=sdRR(p-u_dock.xy,u_dock.zw,u_dockP.x);
+    float edge=(1.0-smoothstep(0.2,2.0*u_px,-sdK))*step(u_dock.y,p.y)*exp(-d.x*d.x/(sx*1.8));
+    float lum=max(u_glowCol.r,max(u_glowCol.g,u_glowCol.b));
+    col+=(u_glowCol*(0.46*halo+0.50*core)+vec3(lum)*0.5*edge)*inside;
+  }else if(u_lensGlass>0.5){
+    col*=1.0-0.24*exp(-max(sh,0.0)/(8.0*u_px))*inside;
+    vec4 l=glass(p,u_lens,u_lensR,u_bezel*0.62*u_px,u_refr*1.25*u_px,min(1.0,u_frost+0.25),u_tint+0.13,u_spec*1.15,0.0);
+    col=mix(col,l.rgb,l.a*u_vis);
+  }else{
+    col*=1.0-0.34*exp(-max(sh,0.0)/(9.0*u_px))*inside;
+    col=mix(col,vec3(0.96),clamp(0.5-sdL,0.0,1.0)*u_vis);
+  }
+  col*=1.0-u_scrim.x;
+  col=over(col,p,u_top,u_topP);
+  col*=1.0-u_scrim.y;
+  col=over(col,p,u_ctx,u_ctxP);
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+function prog(fs) {
+  const p = gl.createProgram();
+  for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    gl.attachShader(p, s);
+  }
+  gl.bindAttribLocation(p, 0, 'a'); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const name = gl.getActiveUniform(p, i).name; u[name] = gl.getUniformLocation(p, name); }
+  return { p, u };
+}
+const P_WALL = prog(FS_WALL), P_BLUR = prog(FS_BLUR), P_GLASS = prog(FS_GLASS);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+function target(w, h) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return { tex, fb, w, h };
+}
+let W, A, B;
+
+function pass(t, program, tex) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fb : null);
+  gl.viewport(0, 0, t ? t.w : canvas.width, t ? t.h : canvas.height);
+  gl.useProgram(program.p);
+  if (tex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); }
+}
+
+// O wallpaper e o desfoque são calculados uma única vez por troca de fundo.
+function bake() {
+  pass(W, P_WALL);
+  gl.uniform2f(P_WALL.u.u_res, W.w, W.h); gl.uniform1i(P_WALL.u.u_kind, S.wall);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  let src = W, dst = A;
+  const steps = [[0, 0], [1, 0], [0, 1], [2, 0], [0, 2], [3, 0], [0, 3], [4, 0], [0, 4]];
+  for (const [sx, sy] of steps) {
+    pass(dst, P_BLUR, src.tex);
+    gl.uniform1i(P_BLUR.u.u_tex, 0); gl.uniform2f(P_BLUR.u.u_size, dst.w, dst.h);
+    gl.uniform2f(P_BLUR.u.u_step, sx / A.w, sy / A.h);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    src = dst; dst = dst === A ? B : A;
+  }
+  bake.blur = src;
+}
+
+// Molas: a posição do foco na barra e a abertura de cada menu (0 fechado, 1 aberto).
+const lens = { x: 0, v: 0 };
+const lensTarget = () => REST0 + ITEM_W * S.i;
+const SP = { hot: { x: 1, v: 0 }, menu: { x: 0, v: 0 }, ctx: { x: 0, v: 0 }, drawer: { x: 0, v: 0 } };
+const GOAL = {
+  hot: () => (UI.zone === 'dock' || UI.zone === 'ctx' ? 1 : 0),
+  menu: () => (UI.zone === 'menu' ? 1 : 0),
+  ctx: () => (UI.zone === 'ctx' ? 1 : 0),
+  drawer: () => (UI.zone === 'drawer' ? 1 : 0),
+};
+
+// Ampliação no estilo do dock do macOS: cada app cresce conforme a distância até o ponto de foco
+// e a largura extra empurra os vizinhos. O ponto de foco é a posição animada pela mola,
+// então a onda acompanha o movimento em vez de saltar de um app para o outro.
+function layout(L, hot) {
+  const n = items.length, M = 1 + (S.mag / 100 - 1) * hot, R = (S.reach / 10) * ITEM_W;
+  const sc = [], c = [];
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const d = Math.abs(REST0 + ITEM_W * i - lens.x);
+    sc[i] = 1 + (M - 1) * (d < R ? 0.5 * (1 + Math.cos(Math.PI * d / R)) : 0);
+    total += ITEM_W * sc[i];
+  }
+  let x = DOCK.cx - total / 2;
+  for (let i = 0; i < n; i++) {
+    c[i] = x + ITEM_W * sc[i] / 2; x += ITEM_W * sc[i];
+    items[i].style.transform = 'translate(' + (c[i] - REST0 - ITEM_W * i).toFixed(2) + 'px,' + (-L.hh * (sc[i] - 1)).toFixed(2) + 'px)';
+    inner[i].style.transform = 'scale(' + sc[i].toFixed(4) + ')';
+  }
+  const raw = (lens.x - REST0) / ITEM_W, t = Math.max(0, Math.min(n - 1, raw));
+  const j = Math.min(n - 2, Math.floor(t)), f = t - j;
+  return {
+    total,
+    x: c[j] + (c[j + 1] - c[j]) * f + (raw - t) * ITEM_W,
+    s: sc[j] + (sc[j + 1] - sc[j]) * f,
+    col: ACCENT[j].map((v, k) => v + (ACCENT[j + 1][k] - v) * f),
+  };
+}
+
+function draw() {
+  const k = canvas.width / 960, u = P_GLASS.u;
+  const banners = S.icons === 'banners', glow = S.focus === 'glow', solo = S.focus === 'solo';
+  // No brilho, a base do app fica fixa (como no dock do Mac) e ele cresce só para cima.
+  // Sem barra, o vidro do foco acompanha a forma do banner (cantos concêntricos) em vez de ser uma cápsula.
+  const L = glow ? { hw: 36, hh: banners ? 20.5 : 11, r: 9 } : solo && banners ? { hw: 46.5, hh: 29, r: 14 } : LENS;
+  const hot = clamp01(SP.hot.x), oM = Math.max(0, SP.menu.x), oC = Math.max(0, SP.ctx.x), oD = Math.max(0, SP.drawer.x);
+  const lay = layout(L, hot);
+
+  // A barra se abre na gaveta; os atalhos do topo se abrem no menu; o menu do app nasce do próprio app.
+  const dk = [mix(DOCK.cx, SHEET.cx, oD), mix(DOCK.cy, SHEET.cy, oD), mix(lay.total / 2 + 8, SHEET.hw, oD), mix(DOCK.hh, SHEET.hh, oD), mix(DOCK.r, SHEET.r, oD)];
+  const tp = ['cx', 'cy', 'hw', 'hh', 'r'].map((key) => mix(TOP_PILL[key], TOP_MENU[key], oM));
+  const cxm = Math.max(48 + CTX_BOX.hw, Math.min(912 - CTX_BOX.hw, lay.x));
+  const cx = [mix(lay.x, cxm, oC), mix(DOCK.cy - 8, CTX_BOX.cy, oC), mix(36, CTX_BOX.hw, oC), mix(22, CTX_BOX.hh, oC), mix(9, CTX_BOX.r, oC)];
+
+  pass(null, P_GLASS);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, W.tex);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, bake.blur.tex);
+  gl.uniform1i(u.u_wall, 0); gl.uniform1i(u.u_blur, 1);
+  gl.uniform2f(u.u_res, canvas.width, canvas.height); gl.uniform1f(u.u_px, k);
+  gl.uniform4f(u.u_dock, dk[0] * k, dk[1] * k, dk[2] * k, dk[3] * k);
+  gl.uniform4f(u.u_dockP, dk[4] * k, solo ? clamp01(oD * 3) : 1, clamp01(oD), solo ? 0 : 1);
+  const stretch = Math.min(16, Math.abs(lens.v) * 0.022), squash = Math.min(5, Math.abs(lens.v) * 0.007);
+  gl.uniform4f(u.u_lens, lay.x * k, (DOCK.cy - L.hh * (lay.s - 1)) * k, (L.hw * lay.s + stretch) * k, (L.hh * lay.s - squash) * k);
+  gl.uniform1f(u.u_lensR, Math.max(4, L.r * lay.s - squash) * k);
+  gl.uniform1f(u.u_lensGlass, glow ? 2 : S.focus === 'pill' ? 0 : 1);
+  gl.uniform1f(u.u_vis, hot * (1 - clamp01(oD * 3)));
+  gl.uniform3f(u.u_glow, lay.x * k, (DOCK.cy + L.hh + 2) * k, (banners ? 34 : 30) * lay.s * k);
+  const lk = S.light / 60;
+  gl.uniform3f(u.u_glowCol, lay.col[0] * lk, lay.col[1] * lk, lay.col[2] * lk);
+  gl.uniform4f(u.u_top, tp[0] * k, tp[1] * k, tp[2] * k, tp[3] * k);
+  gl.uniform3f(u.u_topP, tp[4] * k, 1 - clamp01(oD * 3), clamp01(oM));
+  gl.uniform4f(u.u_ctx, cx[0] * k, cx[1] * k, cx[2] * k, cx[3] * k);
+  gl.uniform3f(u.u_ctxP, cx[4] * k, clamp01(oC * 2.5), 1);
+  gl.uniform2f(u.u_scrim, 0.28 * clamp01(oM), 0.28 * clamp01(oC));
+  gl.uniform1f(u.u_refr, S.refr); gl.uniform1f(u.u_bezel, S.bezel);
+  gl.uniform1f(u.u_frost, S.frost / 100); gl.uniform1f(u.u_tint, S.variant === 'regular' ? 0.12 : 0.05);
+  gl.uniform1f(u.u_spec, S.spec / 100); gl.uniform1f(u.u_disp, S.disp / 100);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  // O conteúdo dos menus aparece depois que o vidro já abriu boa parte do caminho.
+  dock.style.opacity = 1 - clamp01(oD * 2.5);
+  $('clock').style.opacity = 1 - clamp01(oD * 2);
+  $('date').style.opacity = 0.86 * (1 - clamp01(oD * 2));
+  topEl.style.opacity = (1 - clamp01(oM * 2.5)) * (1 - clamp01(oD * 3));
+  menuEl.style.opacity = clamp01((oM - 0.45) / 0.5);
+  ctxEl.style.opacity = clamp01((oC - 0.45) / 0.5);
+  ctxEl.style.left = (cxm - 127).toFixed(1) + 'px';
+  drawerEl.style.opacity = clamp01((oD - 0.5) / 0.45);
+}
+
+let raf = 0, last = 0;
+function animate(now) {
+  const dt = Math.min(0.032, (now - last) / 1000 || 0.016); last = now;
+  const goal = lensTarget();
+  let busy = false;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    lens.x = goal; lens.v = 0;
+    for (const key in SP) { SP[key].x = GOAL[key](); SP[key].v = 0; }
+  } else {
+    lens.v += (-230 * (lens.x - goal) - 23 * lens.v) * dt; lens.x += lens.v * dt;
+    busy = Math.abs(lens.x - goal) > 0.05 || Math.abs(lens.v) > 0.5;
+    for (const key in SP) {
+      const s = SP[key], g = GOAL[key]();
+      s.v += (-260 * (s.x - g) - 27 * s.v) * dt; s.x += s.v * dt;
+      if (Math.abs(s.x - g) > 0.002 || Math.abs(s.v) > 0.02) busy = true;
+    }
+  }
+  draw();
+  if (busy) { raf = requestAnimationFrame(animate); return; }
+  lens.x = goal; lens.v = 0;
+  for (const key in SP) { SP[key].x = GOAL[key](); SP[key].v = 0; }
+  draw(); raf = 0;
+}
+function kick() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(animate); } }
+
+function paint() {
+  const inDock = UI.zone === 'dock' || UI.zone === 'ctx';
+  items.forEach((el, n) => el.classList.toggle('focus', inDock && n === S.i));
+  [...topEl.children].forEach((el, n) => el.classList.toggle('focus', UI.zone === 'top' && n === UI.top));
+  menuRows.forEach((el, n) => el.classList.toggle('focus', UI.zone === 'menu' && n === UI.menu));
+  ctxRows.forEach((el, n) => {
+    el.classList.toggle('focus', UI.zone === 'ctx' && n === UI.ctx);
+    el.classList.toggle('off', (n === 0 && S.i === 0) || (n === 1 && S.i === LAST - 1));
+  });
+  slide(menuEl, menuRows, UI.menu);
+  slide(ctxEl, ctxRows, UI.ctx, ctxRows[UI.ctx].classList.contains('off'));
+  [...grid.children].forEach((el, n) => el.classList.toggle('focus', UI.zone === 'drawer' && n === UI.grid));
+  menuEl.classList.toggle('open', UI.zone === 'menu');
+  ctxEl.classList.toggle('open', UI.zone === 'ctx');
+  drawerEl.classList.toggle('open', UI.zone === 'drawer');
+  kick();
+}
+function say(t) { $('said').textContent = t; clearTimeout(say.t); say.t = setTimeout(() => { $('said').textContent = ''; }, 2600); }
+function go(zone) { UI.zone = zone; paint(); }
+function setFocus(i) { S.i = Math.max(0, Math.min(LAST, i)); paint(); }
+
+function nextWall() {
+  S.wall = WALL_ORDER[(WALL_ORDER.indexOf(S.wall) + 1) % WALL_ORDER.length];
+  syncWall(); applyUi(); bake(); draw(); save();
+  say('Papel de parede: ' + WALL_NAMES[S.wall]);
+}
+function moveApp(dir) {
+  const j = S.i + dir;
+  if (j < 0 || j > LAST - 1) return;
+  const name = APPS[S.i][0];
+  [APPS[S.i], APPS[j]] = [APPS[j], APPS[S.i]];
+  renderDock(); S.i = j; paint();
+  say(name + ' foi para a ' + (dir < 0 ? 'esquerda' : 'direita'));
+}
+
+function move(key) {
+  const dx = key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0;
+  const dy = key === 'ArrowUp' ? -1 : key === 'ArrowDown' ? 1 : 0;
+  if (UI.zone === 'dock') {
+    if (dx) return setFocus(S.i + dx);
+    if (dy < 0) return go('top');
+  } else if (UI.zone === 'top') {
+    if (dx) UI.top = Math.max(0, Math.min(1, UI.top + dx));
+    if (dy > 0) return go('dock');
+  } else if (UI.zone === 'menu') {
+    UI.menu = Math.max(0, Math.min(MENU_N - 1, UI.menu + dy));
+  } else if (UI.zone === 'ctx') {
+    UI.ctx = Math.max(0, Math.min(CTX_N - 1, UI.ctx + dy));
+  } else if (UI.zone === 'drawer') {
+    const n = ALL.length, i = UI.grid;
+    if (dx < 0 && i % COLS > 0) UI.grid--;
+    if (dx > 0 && i % COLS < COLS - 1 && i + 1 < n) UI.grid++;
+    if (dy < 0 && i - COLS >= 0) UI.grid -= COLS;
+    if (dy > 0 && i + COLS < n) UI.grid += COLS;
+  }
+  paint();
+}
+function ok() {
+  if (UI.zone === 'dock') {
+    if (S.i === LAST) { UI.grid = 0; return go('drawer'); }
+    return say('Abre ' + APPS[S.i][0]);
+  }
+  if (UI.zone === 'top') {
+    if (UI.top === 0) return nextWall();
+    UI.menu = 0; return go('menu');
+  }
+  if (UI.zone === 'menu') {
+    if (UI.menu === 0) return say('Abre as configurações do Fire OS');
+    if (UI.menu === 1) return say('Mostra a tela inicial da Amazon');
+    if (UI.menu === 2) return nextWall();
+    return say('Mostra a versão do launcher e procura atualizações');
+  }
+  if (UI.zone === 'ctx') {
+    if (UI.ctx === 0) return moveApp(-1);
+    if (UI.ctx === 1) return moveApp(1);
+    if (UI.ctx === 2) return say('Abre a página de ' + APPS[S.i][0] + ' nas configurações do sistema');
+    return say('Tira ' + APPS[S.i][0] + ' da barra');
+  }
+  if (UI.zone === 'drawer') return say('Abre ' + ALL[UI.grid][0]);
+}
+function hold() {
+  if (UI.zone === 'dock' && S.i !== LAST) { UI.ctx = S.i === 0 ? 1 : 0; return go('ctx'); }
+  if (UI.zone === 'drawer') return say('Fixa ' + ALL[UI.grid][0] + ' na barra');
+}
+function back() {
+  if (UI.zone === 'menu') return go('top');
+  if (UI.zone === 'drawer') { S.i = LAST; return go('dock'); }
+  if (UI.zone === 'ctx' || UI.zone === 'top') return go('dock');
+}
+
+// Enter curto é OK; Enter segurado é o "segurar OK" do controle.
+let okTimer = 0, okHeld = false;
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+  if (e.key.startsWith('Arrow')) { e.preventDefault(); return move(e.key); }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (e.repeat) return;
+    okHeld = false; okTimer = setTimeout(() => { okHeld = true; hold(); }, 450);
+  }
+  if (e.key === 'm' || e.key === 'M' || e.key === 'ContextMenu') { e.preventDefault(); hold(); }
+  if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); back(); }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key !== 'Enter' || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+  clearTimeout(okTimer); if (!okHeld) ok();
+});
+
+// Mouse, só para a demo: clique foca, segundo clique confirma, botão direito abre o menu do app.
+ui.addEventListener('click', (e) => {
+  const item = e.target.closest('.item'), tb = e.target.closest('.tbtn'), tile = e.target.closest('.tile');
+  const m = e.target.closest('#menu .r'), c = e.target.closest('#ctx .r');
+  if (m) { UI.menu = Number(m.dataset.m); paint(); return ok(); }
+  if (c) { UI.ctx = Number(c.dataset.c); paint(); return ok(); }
+  if (tile) { const g = Number(tile.dataset.g), same = g === UI.grid; UI.grid = g; paint(); if (same) ok(); return; }
+  if (tb) { UI.top = Number(tb.dataset.t); UI.zone = 'top'; paint(); return ok(); }
+  if (item && UI.zone !== 'drawer') { const i = Number(item.dataset.i), same = i === S.i && UI.zone === 'dock'; UI.zone = 'dock'; setFocus(i); if (same) ok(); return; }
+  back();
+});
+ui.addEventListener('contextmenu', (e) => {
+  const item = e.target.closest('.item'); if (!item) return;
+  e.preventDefault(); UI.zone = 'dock'; setFocus(Number(item.dataset.i)); hold();
+});
+
+function seg(id, key, after) {
+  const el = $(id);
+  const sync = () => [...el.children].forEach((b) => b.setAttribute('aria-pressed', String(String(S[key]) === b.dataset.v)));
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[key] = isNaN(Number(b.dataset.v)) ? b.dataset.v : Number(b.dataset.v);
+    sync(); b.blur(); after(); save();
+  });
+  sync(); return sync;
+}
+function slider(id) {
+  const el = $(id), out = el.nextElementSibling;
+  const sync = () => { el.value = S[id]; out.value = Math.round(S[id]); };
+  el.addEventListener('input', () => { S[id] = Number(el.value); out.value = Math.round(S[id]); draw(); save(); });
+  sync(); return sync;
+}
+const syncs = ['refr', 'bezel', 'frost', 'spec', 'disp', 'mag', 'reach', 'light'].map(slider);
+const DEFAULTS = { refr: 26, bezel: 18, spec: 70, disp: 14, mag: 145, reach: 25, light: 60 };
+$('reset').addEventListener('click', (e) => {
+  Object.assign(S, DEFAULTS, { frost: S.variant === 'regular' ? 85 : 30 });
+  syncs.forEach((f) => f()); e.currentTarget.blur(); draw(); save();
+});
+function applyUi() {
+  ui.classList.toggle('banners', S.icons === 'banners');
+  ui.classList.toggle('pill', S.focus === 'pill');
+  $('focusnote').textContent = FOCUS_NOTES[S.focus];
+  $('wallnote').textContent = WALL_NOTES[S.wall];
+  $('wallname').textContent = WALL_NAMES[S.wall];
+}
+const syncWall = seg('wall', 'wall', () => { applyUi(); bake(); draw(); });
+seg('variant', 'variant', () => { S.frost = S.variant === 'regular' ? 85 : 30; syncs.forEach((f) => f()); draw(); });
+seg('focus', 'focus', () => { applyUi(); draw(); });
+seg('icons', 'icons', () => { applyUi(); draw(); });
+applyUi();
+
+function tick() {
+  const now = new Date();
+  $('clock').textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  $('date').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function fit() {
+  const avail = document.body.clientWidth - 32;
+  const w = Math.max(320, Math.min(avail, 1600, (window.innerHeight - 250) * 16 / 9));
+  const h = w * 9 / 16, dpr = Math.min(2, window.devicePixelRatio || 1);
+  frame.style.width = w + 'px'; frame.style.height = h + 'px';
+  $('panel').style.maxWidth = Math.max(w, 720) + 'px';
+  ui.style.transform = 'scale(' + w / 960 + ')';
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  W = target(canvas.width, canvas.height);
+  A = target(Math.ceil(canvas.width / 4), Math.ceil(canvas.height / 4));
+  B = target(A.w, A.h);
+  bake(); draw();
+}
+let rt = 0;
+addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(fit, 80); });
+
+lens.x = lensTarget();
+tick(); setInterval(tick, 10000);
+fit(); paint();
+</script>
+</body>
+</html>

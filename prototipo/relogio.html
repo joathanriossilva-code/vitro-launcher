@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relógio de vidro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&family=M+PLUS+Rounded+1c:wght@700;800;900&family=Nunito:wght@700;800;900;1000&family=Roboto:wght@500;700&family=Rubik:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --page: #0f1013; --panel: #17191e; --line: #2a2d35; --text: #e9eaee; --muted: #9a9fab; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--page); color: var(--text); font-family: "Inter", -apple-system, system-ui, sans-serif; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; letter-spacing: -.2px; }
+  .sub { margin: 0 0 14px; color: var(--muted); font-size: 14px; line-height: 1.45; max-width: 1120px; }
+  #frame { position: relative; width: min(100%, 1120px); aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+  #gl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; transition: transform .35s ease; }
+  #frame.zoom #gl { transform: scale(2.2); }
+  #tag { position: absolute; right: 12px; top: 10px; font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(0,0,0,.5); color: #fff; pointer-events: none; }
+  #panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 14px; max-width: 1120px; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .box h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .stack > * + * { margin-top: 12px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; font-size: 13.5px; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #2b3550; border-color: #4a5c8a; }
+  .row { display: grid; grid-template-columns: 104px 1fr 50px; align-items: center; gap: 8px; font-size: 14px; margin: 6px 0; }
+  .row output { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: #7f9cf5; }
+  input[type=text] { font: inherit; font-size: 14px; color: var(--text); background: #0f1115; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 92px; }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+  kbd { font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; }
+</style>
+</head>
+<body>
+<h1>Relógio de vidro</h1>
+<p class="sub">Prévia no tamanho exato da TV (1920 × 1080, mesmas medidas do Vitro), com os papéis de parede do app. Nada foi alterado no app nem na TV. Segure <kbd>espaço</kbd> para ver o relógio atual no mesmo lugar.</p>
+<div id="frame"><canvas id="gl" width="1920" height="1080"></canvas><div id="tag"></div></div>
+
+<div id="panel">
+  <div class="box stack">
+    <div><h2>Relógio</h2>
+      <div class="seg" id="mode" role="group" aria-label="Relógio"><button data-v="vidro">Vidro</button><button data-v="atual">Atual</button></div></div>
+    <div><h2>Vista</h2>
+      <div class="seg" id="view" role="group" aria-label="Vista"><button data-v="tela">Tela inteira</button><button data-v="zoom">Zoom no relógio</button></div></div>
+    <div><h2>Hora mostrada</h2>
+      <input id="hora" type="text" inputmode="numeric" placeholder="agora" maxlength="5" aria-label="Hora mostrada"><span class="note" style="margin-left:8px">vazio = hora atual</span></div>
+    <div><h2>Estilo pronto</h2>
+      <div class="seg" id="presets"><button data-p="iphone" type="button">Como no iPhone</button><button data-p="legivel" type="button">Mais legível</button><button data-p="cristal" type="button">Cristal</button></div></div>
+  </div>
+  <div class="box">
+    <h2>Fundo</h2>
+    <div class="seg" id="wall" role="group" aria-label="Papel de parede"></div>
+    <p class="note">O vidro mostra o que está atrás dele, então o efeito muda bastante de um fundo para outro.</p>
+  </div>
+  <div class="box">
+    <h2>Fonte</h2>
+    <div class="seg" id="font" role="group" aria-label="Fonte"></div>
+    <div class="seg" id="weight" role="group" aria-label="Peso" style="margin-top:8px"></div>
+    <div class="row"><label for="size">Tamanho</label><input id="size" type="range" min="80" max="150" step="1"><output></output></div>
+    <div class="row"><label for="track">Espaçamento</label><input id="track" type="range" min="-10" max="6" step="0.5"><output></output></div>
+    <div class="row"><label for="round">Arredondar</label><input id="round" type="range" min="0" max="100" step="1"><output></output></div>
+    <p class="note">Todas são fontes livres (licença OFL), que podem ir dentro do app. A SF Pro Rounded do iPhone é da Apple e não pode ser distribuída; a M PLUS Rounded é a mais parecida com ela.</p>
+  </div>
+  <div class="box">
+    <h2>Vidro</h2>
+    <div class="row"><label for="transp">Transparência</label><input id="transp" type="range" min="0" max="100" step="1"><output></output></div>
+    <div class="row"><label for="refr">Refração</label><input id="refr" type="range" min="0" max="80" step="1"><output></output></div>
+    <div class="row"><label for="bezel">Relevo</label><input id="bezel" type="range" min="2" max="30" step="0.5"><output></output></div>
+    <div class="row"><label for="frost">Desfoque</label><input id="frost" type="range" min="0" max="100" step="1"><output></output></div>
+    <div class="row"><label for="spec">Brilho</label><input id="spec" type="range" min="0" max="150" step="1"><output></output></div>
+    <div class="row"><label for="disp">Dispersão</label><input id="disp" type="range" min="0" max="50" step="1"><output></output></div>
+    <div class="row"><label for="shadow">Sombra</label><input id="shadow" type="range" min="0" max="100" step="1"><output></output></div>
+    <div class="row"><label for="edge">Contorno</label><input id="edge" type="range" min="0" max="100" step="1"><output></output></div>
+    <div class="seg" style="margin-top:10px"><button id="reset" type="button">Restaurar padrões</button></div>
+    <p class="note" id="cost"></p>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// Mesmo espaço de desenho do Vitro: 960 x 540 unidades, 2 px por unidade numa TV 1080p.
+const W = 1920, H = 1080, K = W / 960, BW = (W + 3) >> 2, BH = (H + 3) >> 2;
+
+const WALLS = [
+  ['01a-leque.jpg', 'Leque'], ['01b-ondas.jpg', 'Ondas'], ['02a-luar.jpg', 'Luar'], ['02b-crista.jpg', 'Crista'], ['03-saturn-cassini.jpg', 'Saturno'],
+  ['04-earthset-artemis.jpg', 'Terra'], ['05-denali-wonder-lake.jpg', 'Denali'], ['06-dune-ridge.jpg', 'Areia'],
+  ['08-klee-castle-and-sun.jpg', 'Klee'], ['09-funke-composition.jpg', 'Funke'],
+  ['10-freundlich-composition.jpg', 'Freundlich'], ];
+// track: espaçamento inicial de cada fonte (% da altura), para os números ficarem juntos como no iPhone.
+const FONTS = {
+  mplus: { name: 'M PLUS Rounded', family: 'M PLUS Rounded 1c', weights: [700, 800, 900], track: -6 },
+  nunito: { name: 'Nunito', family: 'Nunito', weights: [700, 800, 900, 1000], track: -2 },
+  rubik: { name: 'Rubik', family: 'Rubik', weights: [600, 700, 800, 900], track: -3 },
+  baloo: { name: 'Baloo 2', family: 'Baloo 2', weights: [600, 700, 800], track: -2 },
+  fredoka: { name: 'Fredoka', family: 'Fredoka', weights: [500, 600, 700], track: -2 },
+  roboto: { name: 'Roboto (a de hoje)', family: 'Roboto', weights: [500, 700], track: -3.5 },
+};
+const APPS = [
+  ['Netflix', '#17181c', '#f0504a'], ['YouTube', '#f3f0ea', '#1b1b1f'], ['Prime Video', '#1b3a5f', '#fff'],
+  ['Globoplay', '#e9642f', '#fff'], ['Disney+', '#11264d', '#fff'], ['Spotify', '#1f8a50', '#fff'],
+  ['Max', '#3b1f8f', '#fff'], ['Todos', 'rgba(255,255,255,.2)', '#fff'],
+];
+const PRESETS = {
+  iphone: { transp: 62, refr: 30, bezel: 10, frost: 15, spec: 100, disp: 20, shadow: 40, edge: 30 },
+  legivel: { transp: 35, refr: 22, bezel: 9, frost: 45, spec: 80, disp: 10, shadow: 60, edge: 45 },
+  cristal: { transp: 92, refr: 44, bezel: 12, frost: 0, spec: 120, disp: 30, shadow: 30, edge: 20 },
+};
+const DEF = Object.assign({ mode: 'vidro', view: 'tela', wall: '05-denali-wonder-lake.jpg', font: 'mplus', weight: 900,
+  size: 104, track: -6, round: 30, hora: '' }, PRESETS.iphone);
+const S = Object.assign({}, DEF);
+try { Object.assign(S, JSON.parse(localStorage.getItem('vitro-relogio') || '{}')); } catch (e) { /* sem armazenamento */ }
+if (!FONTS[S.font]) S.font = DEF.font;
+function save() { try { localStorage.setItem('vitro-relogio', JSON.stringify(S)); } catch (e) { /* sem armazenamento */ } }
+
+// ---- WebGL ---------------------------------------------------------------------------------
+
+const canvas = $('gl');
+const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false,
+  premultipliedAlpha: true, preserveDrawingBuffer: true });
+
+const VS_QUAD = `
+attribute vec2 a;
+uniform vec4 u_rect;   // canto superior esquerdo, largura e altura (px, y para baixo)
+uniform vec2 u_res;
+varying vec2 v_p; varying vec2 v_uv; varying vec2 v_w;
+void main(){
+  v_uv=a;
+  v_p=u_rect.xy+a*u_rect.zw;
+  v_w=vec2(v_p.x/u_res.x,1.0-v_p.y/u_res.y);
+  gl_Position=vec4(v_w*2.0-1.0,0.0,1.0);
+}`;
+const VS_FULL = `attribute vec2 a; void main(){ gl_Position=vec4(a*2.0-1.0,0.0,1.0); }`;
+const HEAD = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 v_p; varying vec2 v_uv; varying vec2 v_w;
+float sdRR(vec2 p,vec2 h,float r){vec2 q=abs(p)-(h-vec2(r));return length(max(q,0.0))+min(max(q.x,q.y),0.0)-r;}
+vec2 gradRR(vec2 p,vec2 h,float r){
+  vec2 q=abs(p)-(h-vec2(r));
+  vec2 s=vec2(p.x<0.0?-1.0:1.0,p.y<0.0?-1.0:1.0);
+  if(q.x>=0.0||q.y>=0.0)return s*normalize(max(q,0.0)+0.00001);
+  float gx=step(q.y,q.x);return s*vec2(gx,1.0-gx);
+}
+`;
+// Desfoque do Vitro (blur.frag): 9 amostras, separável, num quarto da resolução.
+const FS_BLUR = `
+precision mediump float;
+uniform sampler2D u_tex; uniform vec2 u_size; uniform vec2 u_step;
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_size;
+  vec3 c=texture2D(u_tex,uv).rgb*0.2270270270;
+  c+=(texture2D(u_tex,uv+u_step*1.3846153846).rgb+texture2D(u_tex,uv-u_step*1.3846153846).rgb)*0.3162162162;
+  c+=(texture2D(u_tex,uv+u_step*3.2307692308).rgb+texture2D(u_tex,uv-u_step*3.2307692308).rgb)*0.0702702703;
+  gl_FragColor=vec4(c,1.0);
+}`;
+const FS_WALL = HEAD + `uniform sampler2D u_wall; void main(){ gl_FragColor=vec4(texture2D(u_wall,v_w).rgb,1.0); }`;
+const FS_SPRITE = HEAD + `uniform sampler2D u_tex; uniform float u_alpha; void main(){ gl_FragColor=texture2D(u_tex,v_uv)*u_alpha; }`;
+// Sombra da barra (shadow.frag do Vitro), multiplicando o que está embaixo.
+const FS_SHADOW = HEAD + `
+uniform vec4 u_shape; uniform float u_r; uniform vec2 u_k;
+void main(){
+  vec2 q=max(abs(v_p-u_shape.xy)-(u_shape.zw-vec2(u_r)),0.0);
+  float d=max(length(q)-u_r,0.0);
+  gl_FragColor=vec4(vec3(1.0-u_k.x*exp(-d*u_k.y)),1.0);
+}`;
+// Vidro da barra: o glass.frag do Vitro, sem mudanças.
+const FS_GLASS = HEAD + `
+uniform sampler2D u_wall,u_blur;
+uniform vec2 u_inv; uniform float u_px;
+uniform vec4 u_shape; uniform vec4 u_g1; uniform vec4 u_g2; uniform vec2 u_g3;
+vec3 bg(vec2 uv,float frost){return mix(texture2D(u_wall,uv).rgb,texture2D(u_blur,uv).rgb,frost);}
+void main(){
+  vec2 c=v_p-u_shape.xy;vec2 h=u_shape.zw;float r=u_g1.x;
+  float sd=sdRR(c,h,r);
+  float cov=clamp(0.5-sd,0.0,1.0);
+  if(cov<=0.0){gl_FragColor=vec4(0.0);return;}
+  float frost=u_g1.w;
+  vec3 col;
+  if(sd<=-u_g1.y){
+    col=bg(v_w,frost);
+  }else{
+    float t=clamp(1.0+sd/u_g1.y,0.0,1.0);
+    float d=(1.0-sqrt(1.0-t*t))*u_g1.z;
+    vec2 off=-d*gradRR(c,h,min(r*1.5,min(h.x,h.y)))*u_inv;
+    col.r=bg(v_w+off*(1.0+u_g2.w),frost).r;
+    col.g=bg(v_w+off,frost).g;
+    col.b=bg(v_w+off*(1.0-u_g2.w),frost).b;
+  }
+  col*=1.0-u_g2.z;
+  col=mix(col,vec3(1.0),u_g2.x);
+  col+=0.05*(1.0-smoothstep(-h.y,h.y*0.2,c.y));
+  if(-sd<1.7*u_px){
+    float rim=1.0-smoothstep(0.2,1.7*u_px,-sd);
+    float nd=dot(gradRR(c,h,r),vec2(-0.55238,-0.83359));
+    col+=rim*(0.10+pow(abs(nd),2.4)*u_g2.y);
+  }
+  float a=cov*u_g3.x;
+  gl_FragColor=vec4(col*(u_g3.y*a),a);
+}`;
+// O relógio de vidro. A forma dos números chega numa textura calculada uma vez por minuto:
+// R = distância até a borda em faixa fina (borda nítida), G = distância em faixa larga (relevo e sombra),
+// B e A = direção da borda, suavizada (zera no meio do traço, onde as duas bordas se encontram).
+const FS_TEXT = HEAD + `
+uniform sampler2D u_wall,u_blur,u_sdf;
+uniform vec2 u_inv;     // converte deslocamento em px para coordenada do papel de parede
+uniform vec2 u_texel;   // 1 / tamanho da textura da forma
+uniform vec2 u_range;   // faixa fina e faixa larga da distância (px)
+uniform vec4 u_g1;      // relevo (px), refração (px), desfoque, branco
+uniform vec4 u_g2;      // brilho, dispersão, contorno, px por unidade
+uniform vec3 u_sh;      // sombra: força, espalhamento (px), deslocamento para baixo (px)
+uniform vec2 u_band;    // alto e base dos algarismos na textura (0..1)
+const vec2 LIGHT=vec2(-0.55238,-0.83359);
+vec3 bg(vec2 uv,float f){return mix(texture2D(u_wall,uv).rgb,texture2D(u_blur,uv).rgb,f);}
+void main(){
+  vec4 s=texture2D(u_sdf,v_uv);
+  float df=(s.r-0.5)*2.0*u_range.x;
+  float d=abs(df)<u_range.x-0.3?df:(s.g-0.5)*2.0*u_range.y;
+  float cov=clamp(0.5-d,0.0,1.0);
+  float dsh=(texture2D(u_sdf,v_uv-vec2(0.0,u_sh.z)*u_texel).g-0.5)*2.0*u_range.y;
+  float x=max(dsh,0.0)/u_sh.y;
+  float shade=u_sh.x*exp(-0.5*x*x);
+  float line=u_g2.z*0.5*(1.0-smoothstep(0.0,1.5*u_g2.w,d));
+  float outA=max(shade,line);
+  if(cov<=0.0){gl_FragColor=vec4(0.0,0.0,0.0,outA);return;}
+  vec2 g=s.ba*2.0-1.0;
+  float gm=length(g);
+  vec2 n=g/max(gm,0.001);
+  float inner=max(-d,0.0);
+  float t=clamp(1.0-inner/u_g1.x,0.0,1.0);
+  float prof=1.0-sqrt(1.0-t*t);
+  vec2 off=-prof*u_g1.y*g*u_inv;
+  vec3 col;
+  col.r=bg(v_w+off*(1.0+u_g2.y),u_g1.z).r;
+  col.g=bg(v_w+off,u_g1.z).g;
+  col.b=bg(v_w+off*(1.0-u_g2.y),u_g1.z).b;
+  // O branco do vidro se adapta ao fundo: mais forte sobre fundo escuro, mais fraco sobre fundo claro.
+  float lum=dot(texture2D(u_blur,v_w).rgb,vec3(0.2126,0.7152,0.0722));
+  col=mix(col,vec3(1.0),u_g1.w*mix(1.35,0.65,smoothstep(0.05,0.7,lum)));
+  float nd=dot(n,LIGHT)*min(gm*1.6,1.0);
+  float up=max(nd,0.0),dn=max(-nd,0.0),band=pow(prof,1.5);
+  // Luz larga no relevo, dos dois lados como no vidro da Apple, e uma sombra leve no lado de baixo.
+  col+=u_g2.x*band*(0.42*up*up+0.16*dn*dn);
+  col*=1.0-u_g2.z*0.25*prof*dn;
+  float lit=pow(abs(nd),2.4)*(nd>0.0?1.0:0.6);
+  float rim=1.0-smoothstep(0.2,1.7*u_g2.w,inner);
+  col+=rim*(0.12+lit*u_g2.x);
+  float vy=clamp((v_uv.y-u_band.x)/max(u_band.y-u_band.x,0.001),0.0,1.0);
+  col+=0.05*(1.0-vy);
+  gl_FragColor=vec4(col*cov,cov+(1.0-cov)*outA);
+}`;
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.bindAttribLocation(p, 0, 'a');
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(p, i); u[info.name] = gl.getUniformLocation(p, info.name); }
+  return { p, u };
+}
+const P = {
+  blur: program(VS_FULL, FS_BLUR), wall: program(VS_QUAD, FS_WALL), sprite: program(VS_QUAD, FS_SPRITE),
+  shadow: program(VS_QUAD, FS_SHADOW), glass: program(VS_QUAD, FS_GLASS), text: program(VS_QUAD, FS_TEXT),
+};
+const quad = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+function texture(src, w, h, flip, premul) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !!flip);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !!premul);
+  if (src && src.nodeName) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, src || null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function target(w, h) {
+  const t = texture(null, w, h), f = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return { t, f };
+}
+const B1 = target(BW, BH), B2 = target(BW, BH);
+let wallTex = null, blurTex = null;
+
+function bind(unit, t) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t); }
+function rect(pr, x, y, w, h) {
+  gl.uniform4f(pr.u.u_rect, x, y, w, h);
+  gl.uniform2f(pr.u.u_res, W, H);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// O papel de parede ocupa a tela sem distorcer (corta o que sobra), e o desfoque é feito como no Vitro:
+// um quarto da resolução, nove passadas alternando horizontal e vertical.
+function bakeWall(img) {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.imageSmoothingQuality = 'high';
+  const iw = img.naturalWidth, ih = img.naturalHeight, ia = iw / ih, va = W / H;
+  let sw = iw, sh = ih;
+  if (ia > va) sw = ih * va; else sh = iw / va;
+  x.drawImage(img, (iw - sw) / 2, (ih - sh) / 2, sw, sh, 0, 0, W, H);
+  if (wallTex) gl.deleteTexture(wallTex);
+  wallTex = texture(c, W, H, true, false);
+  gl.disable(gl.BLEND);
+  gl.useProgram(P.blur.p);
+  gl.uniform1i(P.blur.u.u_tex, 0);
+  gl.uniform2f(P.blur.u.u_size, BW, BH);
+  gl.viewport(0, 0, BW, BH);
+  const steps = [[0, 0], [1, 0], [0, 1], [2, 0], [0, 2], [3, 0], [0, 3], [4, 0], [0, 4]];
+  let src = wallTex, dst = B1;
+  for (const s of steps) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f);
+    bind(0, src);
+    gl.uniform2f(P.blur.u.u_step, s[0] / BW, s[1] / BH);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    src = dst.t;
+    dst = dst === B1 ? B2 : B1;
+  }
+  blurTex = src;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+}
+
+// ---- Texto ---------------------------------------------------------------------------------
+
+const scratch = document.createElement('canvas');
+const sx = scratch.getContext('2d', { willReadFrequently: true });
+
+/**
+ * Onde cada caractere começa (org) e medidas dos algarismos. trackPx é o espaçamento entre letras; gapPx, quando
+ * dado, é a folga mínima entre o desenho de um caractere e o do seguinte (sem ela, 04, 06 e 00 encostavam).
+ */
+function measure(str, font, trackPx, gapPx) {
+  sx.font = font;
+  const chars = [...str], org = [];
+  let adv = 0, prevAdv = 0, prevRight = 0;
+  chars.forEach((ch, i) => {
+    const m = sx.measureText(ch), left = -m.actualBoundingBoxLeft, right = m.actualBoundingBoxRight;
+    org[i] = i === 0 ? 0 : Math.max(org[i - 1] + prevAdv + trackPx,
+      gapPx === undefined ? -Infinity : org[i - 1] + prevRight + gapPx - left);
+    prevAdv = m.width;
+    prevRight = right;
+    adv = org[i] + Math.max(m.width, right);
+  });
+  const m = sx.measureText('0123456789:');
+  return { chars, org, adv, asc: m.actualBoundingBoxAscent, desc: Math.max(0, m.actualBoundingBoxDescent) };
+}
+
+function drawChars(x, L, x0, baseline) {
+  L.chars.forEach((ch, i) => x.fillText(ch, x0 + L.org[i], baseline));
+}
+
+const GAP = 0.04;   // folga mínima entre dois números, em fração do tamanho (igual no Vitro)
+
+/** Texto branco com sombra, como o Vitro desenha hoje (sombra do Android: sigma = 0,577 x raio + 0,5). */
+function shadowText(str, font, trackPx, alpha, radiusDp, dyDp, shAlpha) {
+  const L = measure(str, font, trackPx);
+  const rPx = radiusDp * K, sigma = 0.57735 * rPx + 0.5;
+  const pad = Math.ceil(sigma * 3 + dyDp * K) + 2;
+  const asc = Math.ceil(L.asc) + 2, desc = Math.ceil(L.desc) + 2;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(L.adv + 2 * pad);
+  c.height = asc + desc + 2 * pad;
+  const x = c.getContext('2d');
+  x.font = font;
+  x.fillStyle = '#fff';
+  x.globalAlpha = alpha;
+  x.shadowColor = `rgba(0,0,0,${shAlpha})`;
+  x.shadowBlur = 2 * sigma;
+  x.shadowOffsetY = dyDp * K;
+  drawChars(x, L, pad, pad + asc);
+  return { tex: texture(c, 0, 0, false, true), w: c.width, h: c.height, ox: pad, oy: pad + asc, asc: L.asc };
+}
+
+// Transformada de distância exata (Felzenszwalb e Huttenlocher), linha a linha e coluna a coluna.
+const INF = 1e20;
+function edt1d(grid, offset, stride, n, f, v, z) {
+  v[0] = 0; z[0] = -INF; z[1] = INF; f[0] = grid[offset];
+  for (let q = 1, k = 0, s = 0; q < n; q++) {
+    f[q] = grid[offset + q * stride];
+    const q2 = q * q;
+    do {
+      const r = v[k];
+      s = (f[q] - f[r] + q2 - r * r) / (q - r) / 2;
+    } while (s <= z[k] && --k > -1);
+    k++; v[k] = q; z[k] = s; z[k + 1] = INF;
+  }
+  for (let q = 0, k = 0; q < n; q++) {
+    while (z[k + 1] < q) k++;
+    const r = v[k], qr = q - r;
+    grid[offset + q * stride] = f[r] + qr * qr;
+  }
+}
+function edt2d(grid, w, h, T) {
+  for (let x = 0; x < w; x++) edt1d(grid, x, w, h, T.f, T.v, T.z);
+  for (let y = 0; y < h; y++) edt1d(grid, y * w, 1, w, T.f, T.v, T.z);
+}
+/** Distância com sinal até a borda, em px (negativa dentro), a partir da cobertura 0..1 de cada pixel. */
+function sdf(alpha, w, h, T) {
+  const n = w * h, out = T.out, inn = T.inn;
+  for (let i = 0; i < n; i++) {
+    const a = alpha[i];
+    if (a >= 0.999) { out[i] = 0; inn[i] = INF; }
+    else if (a <= 0.001) { out[i] = INF; inn[i] = 0; }
+    else { const e = 0.5 - a; out[i] = e > 0 ? e * e : 0; inn[i] = e < 0 ? e * e : 0; }
+  }
+  edt2d(out, w, h, T);
+  edt2d(inn, w, h, T);
+  const d = new Float32Array(n);
+  for (let i = 0; i < n; i++) d[i] = Math.sqrt(out[i]) - Math.sqrt(inn[i]);
+  return d;
+}
+/** Desfoque gaussiano separável de um campo de valores. */
+function gauss(src, w, h, sig) {
+  const R = Math.max(1, Math.ceil(sig * 3)), ker = new Float32Array(2 * R + 1);
+  let sum = 0;
+  for (let i = -R; i <= R; i++) { ker[i + R] = Math.exp(-(i * i) / (2 * sig * sig)); sum += ker[i + R]; }
+  for (let i = 0; i < ker.length; i++) ker[i] /= sum;
+  const n = w * h, tmp = new Float32Array(n), out = new Float32Array(n);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      let acc = 0;
+      for (let k = -R; k <= R; k++) acc += src[row + clamp(x + k, 0, w - 1)] * ker[k + R];
+      tmp[row + x] = acc;
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let acc = 0;
+      for (let k = -R; k <= R; k++) acc += tmp[clamp(y + k, 0, h - 1) * w + x] * ker[k + R];
+      out[y * w + x] = acc;
+    }
+  }
+  return out;
+}
+/**
+ * Arredonda os cantos da forma: desfoca a cobertura e corta de novo no meio (0,5). Cantos de fora ficam
+ * redondos, cantos de dentro são preenchidos, e a largura dos traços retos não muda. A borda nova sai
+ * com meio-tom de 1 px, calculado pela inclinação do campo desfocado.
+ */
+function roundMask(alpha, w, h, sig) {
+  if (sig < 0.3) return alpha;
+  const b = gauss(alpha, w, h, sig), out = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x, gx = (b[i + 1] - b[i - 1]) * 0.5, gy = (b[i + w] - b[i - w]) * 0.5;
+      const gm = Math.hypot(gx, gy);
+      out[i] = gm < 1e-5 ? (b[i] > 0.5 ? 1 : 0) : clamp(0.5 + (b[i] - 0.5) / gm, 0, 1);
+    }
+  }
+  return out;
+}
+/**
+ * Direção da borda: gradiente da distância depois de um desfoque gaussiano. A distância calculada em grade
+ * de pixels tem pequenas ondulações perto da borda; sem o desfoque elas viram brilho granulado no aro.
+ */
+function edgeDir(d, w, h) {
+  const n = w * h, b = gauss(d, w, h, 3);
+  const gx = new Float32Array(n), gy = new Float32Array(n);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      gx[i] = clamp((b[i + 1] - b[i - 1]) * 0.5, -1, 1);
+      gy[i] = clamp((b[i + w] - b[i - w]) * 0.5, -1, 1);
+    }
+  }
+  return { gx, gy };
+}
+
+const FINE = 4, COARSE = 64;   // faixas da distância guardada (px)
+let glassText = null, nowText = null, dateSprite = null, dockSprite = null;
+
+function timeString() {
+  const m = /^(\d{1,2}):?(\d{2})$/.exec((S.hora || '').trim());
+  if (m && +m[1] < 24 && +m[2] < 60) return m[1].padStart(2, '0') + ':' + m[2];
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function dateString() {
+  const s = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Alto dos algarismos de hoje (Roboto Bold 104 com base em 148): o relógio novo cresce para baixo a partir daí.
+const DIGIT_TOP = 148 - 0.7109 * 104;
+
+let textVer = 0;
+async function buildGlass() {
+  const ver = ++textVer;
+  const f = FONTS[S.font], sizePx = S.size * K, font = `${S.weight} ${sizePx}px "${f.family}"`;
+  try { await document.fonts.load(font, '0123456789:'); } catch (e) { /* segue com a fonte reserva */ }
+  if (ver !== textVer) return;
+  const t0 = performance.now();
+  const str = timeString(), trackPx = S.track / 100 * sizePx;
+  const L = measure(str, font, trackPx, GAP * sizePx);
+  const pad = COARSE + 2, asc = Math.ceil(L.asc) + 2, desc = Math.ceil(L.desc) + 2;
+  const w = Math.ceil(L.adv + 2 * pad), h = asc + desc + 2 * pad;
+  scratch.width = w; scratch.height = h;
+  sx.clearRect(0, 0, w, h);
+  sx.font = font;
+  sx.fillStyle = '#fff';
+  drawChars(sx, L, pad, pad + asc);
+  const img = sx.getImageData(0, 0, w, h).data, n = w * h;
+  let alpha = new Float32Array(n);
+  for (let i = 0; i < n; i++) alpha[i] = img[i * 4 + 3] / 255;
+  alpha = roundMask(alpha, w, h, S.round / 100 * 0.045 * sizePx);
+  const m = Math.max(w, h);
+  const T = { out: new Float32Array(n), inn: new Float32Array(n), f: new Float32Array(m), v: new Int32Array(m), z: new Float32Array(m + 1) };
+  const d = sdf(alpha, w, h, T);
+  const { gx, gy } = edgeDir(d, w, h);
+  // A faixa larga (relevo e sombra) sai da distância levemente desfocada, para o relevo não ondular;
+  // a faixa fina, que desenha a borda, fica com a distância exata.
+  const ds = gauss(d, w, h, 1.5);
+  const px = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const di = d[i];
+    px[i * 4] = clamp(Math.round((di / (2 * FINE) + 0.5) * 255), 0, 255);
+    px[i * 4 + 1] = clamp(Math.round((ds[i] / (2 * COARSE) + 0.5) * 255), 0, 255);
+    px[i * 4 + 2] = clamp(Math.round((gx[i] * 0.5 + 0.5) * 255), 0, 255);
+    px[i * 4 + 3] = clamp(Math.round((gy[i] * 0.5 + 0.5) * 255), 0, 255);
+  }
+  const ms = performance.now() - t0;
+  if (glassText) gl.deleteTexture(glassText.tex);
+  glassText = { tex: texture(px, w, h, false, false), w, h, ox: pad, oy: pad + asc, asc: L.asc };
+  $('cost').textContent = `Forma dos números calculada em ${Math.round(ms)} ms neste Mac (${w} × ${h} px). ` +
+    'Na TV isso roda uma vez por minuto, fora da tela; o vidro em si só é desenhado sobre os números.';
+  request();
+}
+
+async function buildSprites() {
+  try {
+    await Promise.all([document.fonts.load(`700 ${104 * K}px "Roboto"`, '0123456789:'),
+      document.fonts.load(`500 ${19 * K}px "Roboto"`, 'Quinta-feira'), document.fonts.load(`600 ${10.5 * K}px "Inter"`, 'Netflix')]);
+  } catch (e) { /* segue com a fonte reserva */ }
+  for (const s of [nowText, dateSprite]) if (s) gl.deleteTexture(s.tex);
+  // Hoje: Roboto Bold 104 com espaçamento -3,5% e sombra de raio 18 (Painter.text); data em Roboto Medium 19 a 86%.
+  nowText = shadowText(timeString(), `700 ${104 * K}px "Roboto"`, -0.035 * 104 * K, 1, 18, 2, 0x47 / 255);
+  dateSprite = shadowText(dateString(), `500 ${19 * K}px "Roboto"`, 0, 219 / 255, 8, 1, 0x59 / 255);
+  if (!dockSprite) dockSprite = makeDock();
+  request();
+}
+
+function makeDock() {
+  const x0 = 100, y0 = 404, wDp = 760, hDp = 96;
+  const c = document.createElement('canvas');
+  c.width = wDp * K; c.height = hDp * K;
+  const x = c.getContext('2d');
+  x.scale(K, K);
+  APPS.forEach(([name, bgc, fg], i) => {
+    const cx = 154.5 + 93 * i - x0, cy = 452 - y0;
+    x.globalAlpha = 0.92;
+    x.fillStyle = bgc;
+    x.beginPath();
+    if (x.roundRect) x.roundRect(cx - 36, cy - 20.5, 72, 41, 9); else x.rect(cx - 36, cy - 20.5, 72, 41);
+    x.fill();
+    x.fillStyle = fg;
+    x.font = '600 10.5px "Inter"';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText(name, cx, cy + 0.5);
+  });
+  return { tex: texture(c, 0, 0, false, true), x: x0 * K, y: y0 * K, w: c.width, h: c.height };
+}
+
+// ---- Quadro --------------------------------------------------------------------------------
+
+let peek = false;
+function mode() { return peek ? (S.mode === 'vidro' ? 'atual' : 'vidro') : S.mode; }
+
+function sprite(sp, x, y, alpha) {
+  gl.useProgram(P.sprite.p);
+  bind(0, sp.tex);
+  gl.uniform1i(P.sprite.u.u_tex, 0);
+  gl.uniform1f(P.sprite.u.u_alpha, alpha);
+  rect(P.sprite, Math.round(x), Math.round(y), sp.w, sp.h);
+}
+
+function draw() {
+  if (!wallTex) return;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.disable(gl.BLEND);
+  gl.useProgram(P.wall.p);
+  bind(0, wallTex);
+  gl.uniform1i(P.wall.u.u_wall, 0);
+  rect(P.wall, 0, 0, W, H);
+  gl.enable(gl.BLEND);
+
+  // A barra de apps em repouso, com os números do Vitro (Scene e Painter).
+  const cx = 480 * K, cy = 452 * K, hw = 380 * K, hh = 42 * K, r = 42 * K;
+  const fall = 16 * K, strength = 0.32, m = fall * Math.log(strength * 255) + 1, sy = cy + 7 * K;
+  gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+  gl.useProgram(P.shadow.p);
+  gl.uniform4f(P.shadow.u.u_shape, cx, sy, hw, hh);
+  gl.uniform1f(P.shadow.u.u_r, r);
+  gl.uniform2f(P.shadow.u.u_k, strength, 1 / fall);
+  rect(P.shadow, cx - hw - m, sy - hh - m, 2 * (hw + m), 2 * (hh + m));
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(P.glass.p);
+  bind(0, wallTex); bind(1, blurTex);
+  const u = P.glass.u;
+  gl.uniform1i(u.u_wall, 0); gl.uniform1i(u.u_blur, 1);
+  gl.uniform2f(u.u_inv, 1 / W, -1 / H); gl.uniform1f(u.u_px, K);
+  gl.uniform4f(u.u_shape, cx, cy, hw, hh);
+  gl.uniform4f(u.u_g1, r, 18 * K, 51 * K, 0.30);
+  gl.uniform4f(u.u_g2, 0.05, 0.70, 0, 0.14);
+  gl.uniform2f(u.u_g3, 1, 1);
+  rect(P.glass, Math.floor(cx - hw - 1), Math.floor(cy - hh - 1), Math.ceil(2 * hw + 2), Math.ceil(2 * hh + 2));
+  if (dockSprite) sprite(dockSprite, dockSprite.x, dockSprite.y, 1);
+
+  if (dateSprite) sprite(dateSprite, 48 * K - dateSprite.ox, 49 * K - dateSprite.oy, 1);
+
+  if (mode() === 'atual') {
+    if (nowText) sprite(nowText, 45 * K - nowText.ox, 148 * K - nowText.oy, 1);
+  } else if (glassText) {
+    const g = glassText, baseline = DIGIT_TOP * K + g.asc;
+    const x = Math.round(45 * K - g.ox), y = Math.round(baseline - g.oy);
+    const t = P.text, tu = t.u;
+    gl.useProgram(t.p);
+    bind(0, wallTex); bind(1, blurTex); bind(2, g.tex);
+    gl.uniform1i(tu.u_wall, 0); gl.uniform1i(tu.u_blur, 1); gl.uniform1i(tu.u_sdf, 2);
+    gl.uniform2f(tu.u_inv, 1 / W, -1 / H);
+    gl.uniform2f(tu.u_texel, 1 / g.w, 1 / g.h);
+    gl.uniform2f(tu.u_range, FINE, COARSE);
+    gl.uniform4f(tu.u_g1, S.bezel * K, S.refr * K, S.frost / 100, 0.6 * (1 - S.transp / 100));
+    gl.uniform4f(tu.u_g2, S.spec / 100, S.disp / 100, S.edge / 100, K);
+    gl.uniform3f(tu.u_sh, 0.55 * S.shadow / 100, 9 * K, 3 * K);
+    gl.uniform2f(tu.u_band, (g.oy - g.asc) / g.h, g.oy / g.h);
+    rect(t, x, y, g.w, g.h);
+  }
+  $('tag').textContent = mode() === 'atual' ? 'Relógio atual' : 'Relógio de vidro';
+}
+
+let raf = 0;
+function request() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); }); }
+
+function loadWall() {
+  const img = new Image();
+  img.onload = () => { if (img.dataset.name === S.wall) { bakeWall(img); request(); } };
+  img.dataset.name = S.wall;
+  img.src = '../launcher/assets/wallpapers/' + encodeURIComponent(S.wall);
+}
+
+// ---- Controles -----------------------------------------------------------------------------
+
+function seg(id, items, get, set) {
+  const box = $(id);
+  box.innerHTML = '';
+  for (const [v, label] of items) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.dataset.v = v;
+    b.addEventListener('click', () => { set(v); mark(); });
+    box.appendChild(b);
+  }
+  const mark = () => { for (const b of box.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get()))); };
+  mark();
+  return mark;
+}
+
+const markMode = seg('mode', [['vidro', 'Vidro'], ['atual', 'Atual']], () => S.mode, (v) => { S.mode = v; save(); request(); });
+seg('view', [['tela', 'Tela inteira'], ['zoom', 'Zoom no relógio']], () => S.view, (v) => { S.view = v; save(); $('frame').classList.toggle('zoom', v === 'zoom'); });
+$('frame').classList.toggle('zoom', S.view === 'zoom');
+seg('wall', WALLS, () => S.wall, (v) => { S.wall = v; save(); loadWall(); });
+let markWeight = () => {};
+function weights() {
+  const list = FONTS[S.font].weights;
+  if (!list.includes(S.weight)) S.weight = list.reduce((a, b) => (Math.abs(b - S.weight) < Math.abs(a - S.weight) ? b : a));
+  markWeight = seg('weight', list.map((w) => [w, 'Peso ' + w]), () => S.weight, (v) => { S.weight = +v; save(); buildGlass(); });
+}
+function pickFont(v) { S.font = v; S.track = FONTS[v].track; syncSliders(); weights(); save(); buildGlass(); }
+seg('font', Object.entries(FONTS).map(([k, f]) => [k, f.name]), () => S.font, pickFont);
+weights();
+
+const UNITS = { size: '', track: '%', round: '%', transp: '%', refr: '', bezel: '', frost: '%', spec: '%', disp: '%', shadow: '%', edge: '%' };
+const SHAPE = new Set(['size', 'track', 'round']);
+function syncSliders() {
+  for (const id of Object.keys(UNITS)) {
+    const el = $(id);
+    el.value = S[id];
+    el.parentElement.querySelector('output').textContent = String(S[id]).replace('.', ',') + UNITS[id];
+  }
+}
+for (const id of Object.keys(UNITS)) {
+  $(id).addEventListener('input', (e) => {
+    S[id] = +e.target.value;
+    e.target.parentElement.querySelector('output').textContent = String(S[id]).replace('.', ',') + UNITS[id];
+    save();
+    if (SHAPE.has(id)) buildGlass(); else request();
+  });
+}
+syncSliders();
+for (const b of $('presets').children) {
+  b.addEventListener('click', () => { Object.assign(S, PRESETS[b.dataset.p]); save(); syncSliders(); request(); });
+}
+$('reset').addEventListener('click', () => {
+  const keep = { wall: S.wall, view: S.view, hora: S.hora };
+  Object.assign(S, DEF, keep);
+  save(); syncSliders(); markMode(); weights();
+  seg('font', Object.entries(FONTS).map(([k, f]) => [k, f.name]), () => S.font, pickFont);
+  buildGlass();
+});
+$('hora').value = S.hora;
+$('hora').addEventListener('input', (e) => { S.hora = e.target.value; save(); buildGlass(); buildSprites(); });
+
+addEventListener('keydown', (e) => {
+  if (e.code !== 'Space' || e.repeat || e.target.nodeName === 'INPUT') return;
+  e.preventDefault();
+  peek = true;
+  request();
+});
+addEventListener('keyup', (e) => { if (e.code === 'Space' && peek) { peek = false; request(); } });
+
+let lastMinute = -1;
+setInterval(() => {
+  const m = Math.floor(Date.now() / 60000);
+  if (m !== lastMinute) {
+    if (lastMinute !== -1) { buildSprites(); if (!S.hora) buildGlass(); }
+    lastMinute = m;
+  }
+}, 1000);
+
+loadWall();
+buildSprites();
+buildGlass();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Chave de assinatura: criada pelo build.sh no primeiro build. Guarde-a fora do repositório.
+*.jks
+*.keystore
+# Gerado pelo build.sh.
+launcher/out/
+.DS_Store

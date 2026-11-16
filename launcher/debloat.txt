@@ -1,0 +1,87 @@
+# O que o debloat.sh pode desativar, por grupo. Cada linha é: grupo  pacote  # o que é
+# Nada é apagado: os apps são desativados e voltam com "./debloat.sh <ip> desfazer".
+# Lista conferida num Fire TV Stick 3ª geração (AFTSSS), Fire OS 7.7.1.7. Pacotes que não existirem são pulados.
+# Base: a lista do projeto FireFrame (licença MIT), reduzida ao que estava instalado nele.
+#
+# Ficam de fora de propósito, porque a Fire TV depende deles: o launcher da Amazon (o Fire OS nem deixa),
+# Configurações, teclado, Bluetooth e controle remoto, Appstore (os apps conferem a licença por ela),
+# login e conta, WebView, descoberta para transmitir de Netflix e YouTube, controle parental e protetor de tela.
+#
+# Também ficam de fora:
+#  - Prime Video (com.amazon.firebat): quem cuida dele é o Vitro (0.3.5 em diante). Fica desativado
+#    enquanto ninguém usa e é ativado na hora de abrir pela barra; 5 min depois de sair, desativa de novo.
+#    Para deixá-lo sempre ativo, rode "pm enable com.amazon.firebat" e tire-o de Apps.ON_DEMAND.
+#  - Atualizações do sistema (com.amazon.device.software.ota e afins): desligá-las deixa o aparelho
+#    sem correções de segurança. Se um dia quiser, é uma decisão para tomar à parte.
+#  - Processos que não consegui identificar com segurança (device.services, ceviche, adep, diode).
+
+# Anúncios, rastreamento e promoções
+anuncios      com.amazon.kso.blackbird                 # serviço de anúncios (ofertas especiais) | ad service (special offers)
+anuncios      com.amazon.ftvads.deeplinking            # abre os anúncios quando clicados | opens ads when clicked
+anuncios      com.amazon.tv.acr                        # reconhecimento automático de conteúdo: registra o que passa na tela | automatic content recognition: logs what plays on screen
+anuncios      com.amazon.media.recommendations         # fileiras de recomendação da tela da Amazon | recommendation rows on the Amazon home screen
+anuncios      com.amazon.sneakpeek                     # prévias que tocam sozinhas na tela da Amazon | previews that autoplay on the Amazon home screen
+anuncios      com.amazon.shoptv.client                 # compras da Amazon na TV | Amazon shopping on the TV
+anuncios      com.amazon.shoptv.firetv.client          # compras da Amazon na TV | Amazon shopping on the TV
+anuncios      com.amazon.tigris                        # ofertas de assinaturas | subscription offers
+anuncios      com.amazon.tv.easyupgrade                # propaganda de "troque seu aparelho" | "upgrade your device" ads
+anuncios      com.amazon.hedwig                        # Notícias | News
+anuncios      com.amazon.minitv.android.app            # Amazon miniTV | Amazon miniTV
+
+# Telemetria e registros enviados à Amazon
+telemetria    com.amazon.device.crashmanager           # relatórios de falha | crash reports
+telemetria    com.amazon.dp.logger                     # registro de eventos do aparelho | device event log
+telemetria    com.amazon.logan                         # envio de registros para a Amazon | sends logs to Amazon
+telemetria    com.amazon.device.logmanager             # gerenciador de registros | log manager
+telemetria    com.amazon.tv.fw.metrics                 # métricas do sistema | system metrics
+telemetria    com.amazon.wirelessmetrics.service       # métricas de Wi-Fi | Wi-Fi metrics
+telemetria    com.amazon.perfc                         # coleta de dados de desempenho | performance data collection
+telemetria    com.amazon.perfcollection                # coleta de dados de desempenho | performance data collection
+telemetria    com.amazon.wifilocker                    # guarda suas senhas de Wi-Fi na Amazon | stores your Wi-Fi passwords at Amazon
+
+# Extras que ninguém pediu
+extras        com.amazon.d3                            # modo de demonstração de loja | store demo mode
+extras        com.amazon.gamehub                       # central de jogos | games hub
+extras        com.amazon.spiderpork                    # Amazon Luna (jogos na nuvem) | Amazon Luna (cloud gaming)
+extras        com.amazon.tahoe                         # Amazon Kids | Amazon Kids
+extras        com.amazon.tmm.tutorial                  # tutoriais | tutorials
+extras        com.amazon.storm.lightning.tutorial      # tutoriais | tutorials
+extras        com.amazon.tv.releasenotes               # notas de versão | release notes
+extras        com.amazon.tv.csapp                      # vídeos de ajuda | help videos
+extras        com.amazon.ods.kindleconnect             # compartilhamento de tela com o suporte | screen sharing with customer support
+
+# Alexa: a busca por voz no botão de microfone do controle para de funcionar
+# MANTER LIGADO para continuar controlando a TV por voz.
+alexa         com.amazon.vizzini                       # Alexa na Fire TV | Alexa on Fire TV
+alexa         com.amazon.alexa.externalmediaplayer.fireos  # controle de mídia pela Alexa | media control by Alexa
+alexa         com.amazon.alexamediaplayer.runtime.ftv  # player de mídia da Alexa | Alexa media player
+alexa         com.amazon.alexadirectivebrokerservice   # comandos da Alexa | Alexa commands
+alexa         com.amazon.alexa.datastore.app           # dados da Alexa | Alexa data
+alexa         com.amazon.aca                           # dicas da Alexa para apps | Alexa tips for apps
+alexa         com.amazon.vizzini.ftvcds                # "O que devo assistir" | "What should I watch"
+alexa         com.amazon.cardinal                      # player de vídeo da Alexa | Alexa video player
+alexa         com.amazon.tv.alexaalerts                # alertas da Alexa | Alexa alerts
+alexa         com.amazon.tv.alexanotifications         # notificações da Alexa | Alexa notifications
+alexa         com.amazon.rtcsessioncontroller          # chamadas de vídeo da Alexa | Alexa video calls
+alexa         com.amazon.whad                          # áudio em toda a casa | whole-home audio
+alexa         com.amazon.whasettings                   # ajustes do áudio em toda a casa | whole-home audio settings
+alexa         com.amazon.wha.mediabrowserservice       # áudio em toda a casa | whole-home audio
+alexa         com.amazon.spotify.mediabrowserservice   # ponte da Alexa com o Spotify: tocar no Spotify por voz | Alexa bridge to Spotify: play on Spotify by voice
+
+# Música e mais: a tela de música da Alexa (aparece como app). Pedir música por voz na TV pode deixar de funcionar.
+musica-alexa  com.amazon.audiohome                     # Música e mais | Music and more
+
+# Atalhos sem função para o dia a dia
+atalhos       com.amazon.firetv.troubleshooting        # FireTV Troubleshooting (atalho vazio de diagnóstico) | FireTV Troubleshooting (empty diagnostics shortcut)
+
+# Apps da própria Amazon
+apps-amazon   com.amazon.bueller.music                 # Amazon Music | Amazon Music
+apps-amazon   com.amazon.bueller.photos                # Amazon Photos | Amazon Photos
+apps-amazon   com.amazon.cloud9                        # navegador Silk | Silk browser
+
+# Espelhamento de tela da Fire TV (transmitir de Netflix e YouTube continua funcionando)
+espelhamento  com.amazon.cast.sink                     # Espelhamento de tela | Screen mirroring
+espelhamento  com.amazon.awvflingreceiver              # receptor de transmissão da Amazon | Amazon casting receiver
+
+# Guia de TV ao vivo da Amazon: acorda apps de canais em segundo plano para preencher a aba Ao Vivo
+tv-ao-vivo    com.amazon.tv.livetv                     # guia de TV ao vivo | live TV guide

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo do launcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page: #101114; --page-text: #d9dae0; --page-muted: #8b8d98; --page-line: #2a2c33;
+    --ink: #ffffff; --ink-soft: rgba(255,255,255,.74);
+    --font: "Bricolage Grotesque", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --page: #f1f1ee; --page-text: #22232a; --page-muted: #6b6d78; --page-line: #d6d6d0; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--page-text); font-family: var(--font); padding: 16px; }
+  #wrap { position: relative; margin: 0 auto; max-width: 1440px; }
+  #tv {
+    position: absolute; left: 0; top: 0; width: 960px; height: 540px; transform-origin: 0 0;
+    overflow: hidden; border-radius: 6px; color: var(--ink); user-select: none;
+  }
+
+  /* O céu acompanha a hora. No aparelho isso é um gradiente desenhado em código, sem imagem. */
+  .sky { position: absolute; inset: 0; transition: background 900ms ease; }
+  .manha .sky      { background: linear-gradient(180deg, #24405f 0%, #56708c 46%, #d79a72 100%); }
+  .tarde .sky      { background: linear-gradient(180deg, #17406b 0%, #2f6796 55%, #6f9cbd 100%); }
+  .entardecer .sky { background: linear-gradient(180deg, #2a2144 0%, #6b3a5a 52%, #cf6f45 100%); }
+  .noite .sky      { background: linear-gradient(180deg, #0b1124 0%, #171a36 55%, #2c2647 100%); }
+
+  .orb { position: absolute; border-radius: 50%; transition: all 900ms ease; }
+  .manha .orb      { width: 190px; height: 190px; right: 150px; top: 300px; background: #ffd9a6; box-shadow: 0 0 120px 40px rgba(255,200,140,.35); }
+  .tarde .orb      { width: 120px; height: 120px; right: 210px; top: 70px;  background: #fff3d1; box-shadow: 0 0 140px 60px rgba(255,240,200,.28); }
+  .entardecer .orb { width: 230px; height: 230px; right: 110px; top: 330px; background: #ffb070; box-shadow: 0 0 160px 60px rgba(255,140,80,.4); }
+  .noite .orb      { width: 84px;  height: 84px;  right: 190px; top: 84px;  background: #e9e7f6; box-shadow: 0 0 70px 14px rgba(200,200,255,.18); }
+
+  .top { position: absolute; left: 48px; right: 48px; top: 27px; display: flex; justify-content: space-between; align-items: center; }
+  .date { font-size: 20px; font-weight: 400; color: var(--ink-soft); }
+  .date::first-letter { text-transform: uppercase; }
+  .status { display: flex; align-items: center; gap: 14px; color: var(--ink-soft); }
+  .status svg { width: 22px; height: 22px; display: block; }
+  .gear { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 19px; font-size: 16px; color: var(--ink-soft); transition: all 140ms ease; }
+  .gear span { max-width: 0; overflow: hidden; white-space: nowrap; transition: max-width 160ms ease; }
+  .gear.focus { background: #fff; color: #14151a; }
+  .gear.focus span { max-width: 140px; }
+
+  .clock {
+    position: absolute; left: 44px; top: 66px; font-size: 148px; line-height: 1; font-weight: 640;
+    font-variation-settings: "wdth" 78; letter-spacing: -2px; font-feature-settings: "tnum";
+  }
+
+  .dockview { position: absolute; left: 0; right: 0; bottom: 0; height: 170px; overflow: hidden; }
+  .dock { position: absolute; left: 48px; top: 26px; display: flex; gap: 12px; transition: transform 200ms ease; }
+  .tile {
+    position: relative; flex: none; width: 132px; height: 74px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-size: 17px; font-weight: 650; letter-spacing: -.2px; line-height: 1.05; padding: 0 8px;
+    filter: brightness(.8) saturate(.9); transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+    cursor: pointer;
+  }
+  .tile.focus { transform: scale(1.14); filter: none; box-shadow: 0 0 0 3px #fff, 0 14px 30px rgba(0,0,0,.45); z-index: 2; }
+  .tile .cap {
+    position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%) scale(.877);
+    white-space: nowrap; font-size: 17px; font-weight: 500; color: #fff; opacity: 0; transition: opacity 140ms ease;
+  }
+  .tile.focus .cap { opacity: 1; }
+  .tile.all { background: rgba(255,255,255,.16); color: #fff; gap: 8px; font-weight: 500; font-size: 16px; }
+  .tile.all svg { width: 20px; height: 20px; flex: none; }
+
+  .drawer { position: absolute; inset: 0; background: rgba(8,10,20,.9); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+  .drawer.open { opacity: 1; pointer-events: auto; }
+  .drawer h2 { position: absolute; left: 48px; top: 30px; margin: 0; font-size: 26px; font-weight: 600; font-variation-settings: "wdth" 84; }
+  .drawer .hint { position: absolute; right: 48px; top: 36px; font-size: 16px; color: var(--ink-soft); }
+  .grid { position: absolute; left: 48px; top: 96px; display: grid; grid-template-columns: repeat(5, 156px); column-gap: 16px; row-gap: 44px; }
+  .grid .tile { width: 156px; height: 88px; font-size: 19px; }
+  .grid .tile.focus { transform: scale(1.1); }
+  .grid .tile .cap { transform: translateX(-50%) scale(.909); top: calc(100% + 10px); }
+
+  .panel { margin: 14px auto 0; max-width: 1440px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; font-size: 14px; color: var(--page-muted); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; color: var(--page-text); background: transparent; border: 1px solid var(--page-line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--page-text); color: var(--page); border-color: var(--page-text); }
+  .seg button:focus-visible { outline: 2px solid #5b8def; outline-offset: 2px; }
+  kbd { font: inherit; border: 1px solid var(--page-line); border-radius: 5px; padding: 1px 6px; color: var(--page-text); }
+  #said { color: var(--page-text); min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="tv" class="noite" aria-label="Tela inicial do launcher">
+    <div class="sky"></div>
+    <div class="orb"></div>
+    <div class="top">
+      <div class="date" id="date"></div>
+      <div class="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-label="Wi-Fi conectado"><path d="M2.5 9a14 14 0 0 1 19 0"/><path d="M6 12.5a9 9 0 0 1 12 0"/><path d="M9.2 16a4.3 4.3 0 0 1 5.6 0"/><circle cx="12" cy="19.2" r=".6" fill="currentColor"/></svg>
+        <div class="gear" id="gear" data-zone="top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/></svg>
+          <span>Configurações</span>
+        </div>
+      </div>
+    </div>
+    <div class="clock" id="clock">00:00</div>
+    <div class="dockview"><div class="dock" id="dock"></div></div>
+    <div class="drawer" id="drawer">
+      <h2>Todos os apps</h2>
+      <div class="hint">Segure OK para fixar na tela inicial</div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div>Use <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd>, <kbd>Enter</kbd> como OK e <kbd>Esc</kbd> como Voltar.</div>
+  <div class="seg" id="seg" role="group" aria-label="Hora do dia">
+    <button data-p="auto" aria-pressed="true">Hora atual</button>
+    <button data-p="manha" aria-pressed="false">Manhã</button>
+    <button data-p="tarde" aria-pressed="false">Tarde</button>
+    <button data-p="entardecer" aria-pressed="false">Entardecer</button>
+    <button data-p="noite" aria-pressed="false">Noite</button>
+  </div>
+  <div id="said" aria-live="polite"></div>
+</div>
+
+<script>
+// Nomes em texto só para o protótipo: no aparelho cada bloco mostra o banner do próprio app.
+const APPS = [
+  ['Netflix', '#17181c', '#f0504a'], ['YouTube', '#f3f0ea', '#1b1b1f'], ['Prime Video', '#1b3a5f', '#fff'],
+  ['Globoplay', '#e9642f', '#fff'], ['Disney+', '#11264d', '#fff'], ['Spotify', '#1f8a50', '#fff'],
+  ['Max', '#3b1f8f', '#fff'], ['Pluto TV', '#f6cf45', '#1b1b1f'], ['Twitch', '#7a4bd8', '#fff'],
+  ['Kodi', '#2a7db5', '#fff'], ['VLC', '#e2852c', '#1b1b1f'], ['Downloader', '#c9582a', '#fff'],
+  ['Navegador', '#2e6f69', '#fff'], ['Arquivos', '#3f4859', '#fff'], ['Configurações', '#3a3f4b', '#fff'],
+];
+const FAVORITES = 7;
+const COLS = 5;
+
+const $ = (id) => document.getElementById(id);
+const tv = $('tv'), dock = $('dock'), grid = $('grid'), drawer = $('drawer'), gear = $('gear');
+const state = { zone: 'dock', i: 0 };
+
+function tile(app, zone, i) {
+  const el = document.createElement('div');
+  el.className = 'tile';
+  el.style.background = app[1];
+  el.style.color = app[2];
+  el.dataset.zone = zone; el.dataset.i = i; el.dataset.name = app[0];
+  el.innerHTML = app[0] + '<span class="cap">' + app[0] + '</span>';
+  return el;
+}
+
+APPS.slice(0, FAVORITES).forEach((a, i) => dock.appendChild(tile(a, 'dock', i)));
+const all = document.createElement('div');
+all.className = 'tile all';
+all.dataset.zone = 'dock'; all.dataset.i = FAVORITES; all.dataset.name = 'Todos os apps';
+all.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>Todos';
+dock.appendChild(all);
+APPS.forEach((a, i) => grid.appendChild(tile(a, 'drawer', i)));
+
+function paint() {
+  document.querySelectorAll('.focus').forEach((e) => e.classList.remove('focus'));
+  if (state.zone === 'top') gear.classList.add('focus');
+  if (state.zone === 'dock') {
+    dock.children[state.i].classList.add('focus');
+    const right = (state.i + 1) * 144 - 12;
+    dock.style.transform = 'translateX(' + -Math.max(0, right - 864) + 'px)';
+  }
+  if (state.zone === 'drawer') grid.children[state.i].classList.add('focus');
+  drawer.classList.toggle('open', state.zone === 'drawer');
+}
+
+function ok() {
+  if (state.zone === 'top') return say('Abre as configurações do Fire OS');
+  if (state.zone === 'dock' && state.i === FAVORITES) { state.zone = 'drawer'; state.i = 0; return paint(); }
+  const name = (state.zone === 'dock' ? dock : grid).children[state.i].dataset.name;
+  say('Abre ' + name);
+}
+function back() { if (state.zone === 'drawer') { state.zone = 'dock'; state.i = FAVORITES; paint(); } }
+function say(t) { $('said').textContent = t; clearTimeout(say.t); say.t = setTimeout(() => $('said').textContent = '', 2200); }
+
+document.addEventListener('keydown', (e) => {
+  const k = e.key;
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Backspace'].includes(k)) return;
+  if (e.target.tagName === 'BUTTON' && k === 'Enter') return;
+  e.preventDefault();
+  if (k === 'Enter') return ok();
+  if (k === 'Escape' || k === 'Backspace') return back();
+  const s = state;
+  if (s.zone === 'dock') {
+    if (k === 'ArrowLeft') s.i = Math.max(0, s.i - 1);
+    if (k === 'ArrowRight') s.i = Math.min(FAVORITES, s.i + 1);
+    if (k === 'ArrowUp') { s.last = s.i; s.zone = 'top'; }
+  } else if (s.zone === 'top') {
+    if (k === 'ArrowDown') { s.zone = 'dock'; s.i = s.last ?? 0; }
+  } else {
+    const n = APPS.length;
+    if (k === 'ArrowLeft' && s.i % COLS > 0) s.i--;
+    if (k === 'ArrowRight' && s.i % COLS < COLS - 1 && s.i + 1 < n) s.i++;
+    if (k === 'ArrowUp' && s.i - COLS >= 0) s.i -= COLS;
+    if (k === 'ArrowDown' && s.i + COLS < n) s.i += COLS;
+  }
+  paint();
+});
+
+tv.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-zone]');
+  if (!t) return;
+  state.zone = t.dataset.zone; state.i = Number(t.dataset.i || 0);
+  paint(); ok();
+});
+
+let period = 'auto';
+function periodFor(h) { return h >= 5 && h < 11 ? 'manha' : h < 17 && h >= 11 ? 'tarde' : h >= 17 && h < 19 ? 'entardecer' : 'noite'; }
+function tick() {
+  const now = new Date();
+  $('clock').textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  $('date').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  tv.className = period === 'auto' ? periodFor(now.getHours()) : period;
+}
+$('seg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  period = b.dataset.p;
+  [...$('seg').children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  b.blur(); tick();
+});
+
+function fit() {
+  const wrap = $('wrap');
+  const s = Math.min(wrap.clientWidth / 960, Math.max(0.3, (window.innerHeight - 110) / 540));
+  tv.style.transform = 'scale(' + s + ')';
+  wrap.style.height = 540 * s + 'px';
+  wrap.style.width = 960 * s + 'px';
+}
+addEventListener('resize', fit);
+fit(); tick(); paint(); setInterval(tick, 10000);
+</script>
+</body>
+</html>
