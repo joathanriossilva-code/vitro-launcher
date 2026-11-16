@@ -9,7 +9,7 @@ Tudo roda na própria TV. O Vitro não tem servidor, não manda dados para fora 
 > Um projeto de um entusiasta brasileiro, que só queria resolver um problema da própria televisão e resolveu
 > dividir a solução com o mundo.
 
-**Como usar, botão por botão: [Tutorial](TUTORIAL.md).** *English: [README.en.md](README.en.md).* O app fala português e inglês: segue o idioma da TV, e dá para trocar em
+**Como instalar: [INSTALAR.md](INSTALAR.md). Como usar, botão por botão: [Tutorial](TUTORIAL.md).** *English: [README.en.md](README.en.md).* O app fala português e inglês: segue o idioma da TV, e dá para trocar em
 Home › ajustes do Vitro › Sobre.
 
 ![Tela inicial do Vitro com o menu de ajustes aberto](docs/guia/menu.jpg)
@@ -93,6 +93,8 @@ flowchart LR
   religa quando a TV liga. O menu **Autoreparar** faz a mesma conferência na hora.
 
 ## Instalar
+
+**Guia passo a passo, do jeito mais fácil (o app Downloader, só com o controle) ao mais trabalhoso: [INSTALAR.md](INSTALAR.md).** Abaixo, o resumo.
 
 ### 1. Ligue as opções do desenvolvedor
 

@@ -8,7 +8,7 @@ Everything runs on the TV itself. Vitro has no server, sends no data anywhere an
 > A project by a Brazilian enthusiast who just wanted to fix a problem with their own TV, and decided to share the
 > fix with the world.
 
-**How to use it, button by button: [Tutorial](TUTORIAL.en.md).** *Português: [README.md](README.md)* (the full guide, with more screenshots). The app speaks English and
+**How to install: [INSTALL.md](INSTALL.md). How to use it, button by button: [Tutorial](TUTORIAL.en.md).** *Português: [README.md](README.md)* (the full guide, with more screenshots). The app speaks English and
 Portuguese: it follows the TV's language, and you can switch in Home › Vitro settings › About.
 
 ![Vitro's home screen with the settings menu open](docs/guia/menu.jpg)
@@ -72,6 +72,8 @@ flowchart LR
   back, Vitro disables them again. An app you re-enable yourself stays enabled.
 
 ## Install
+
+**Step-by-step guide, from the easiest option (the Downloader app, with just the remote) to the most involved: [INSTALL.md](INSTALL.md).** Below, the short version.
 
 1. **Turn on developer options.**
    - Fire TV: Settings › My Fire TV › About › press OK **7 times** on the device name, then turn on ADB debugging
