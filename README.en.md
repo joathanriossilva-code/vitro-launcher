@@ -83,7 +83,7 @@ flowchart LR
    - Android TV: Settings › Device Preferences › About › press OK **7 times** on "Build", then turn on USB debugging
      (and Network debugging, if listed; the Shield needs it) in Developer options.
 2. **Install the APK**, using one of these:
-   - the Downloader app, after allowing it to install unknown apps;
+   - the Downloader app, after allowing it to install unknown apps: type the code **9849078** in the address field;
    - the Send Files to TV app;
    - a computer: `adb connect TV-IP:5555`, then `adb install vitro.apk`.
 3. **Open Vitro.** First-run setup opens by itself.

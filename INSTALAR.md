@@ -43,13 +43,23 @@ O **Downloader** é um app gratuito que baixa arquivos direto na TV, sem precisa
    | Google TV | Configurações › Apps › Segurança e restrições › **Fontes desconhecidas** › Downloader: **Ligado** |
    | Android TV | Configurações › Preferências do dispositivo › Segurança e restrições › **Fontes desconhecidas** › Downloader: **Ligado** |
 
-3. **Abra o Downloader** e, no campo de endereço, digite:
+3. **Abra o Downloader** e, no campo de endereço, digite só o código:
+
+   ```
+   9849078
+   ```
+
+   Aperte **Go**. O download começa sozinho. O código sempre leva à versão mais recente do Vitro.
+
+   <details>
+   <summary>Se preferir digitar o endereço completo</summary>
 
    ```
    github.com/joathanriossilva-code/vitro-launcher/releases/latest/download/vitro.apk
    ```
 
-   Aperte **Go**. O download começa sozinho.
+   É para onde o código leva (dá para conferir em `aftv.news/9849078+`, em qualquer navegador).
+   </details>
 4. Quando terminar, aperte **Instalar** e depois **Concluído**. O Downloader oferece apagar o arquivo baixado: pode
    apagar.
 
@@ -122,5 +132,5 @@ adb install vitro.apk
 |---|---|
 | "Instalação bloqueada" ou o botão Instalar não aparece | Falta deixar o app que baixou o arquivo instalar apps (passo 2 do Downloader). |
 | "App não instalado" | Já existe outra versão do Vitro assinada com outra chave (por exemplo, uma compilada por você). Desinstale a antiga e instale de novo. |
-| O Downloader não acha o endereço | Confira o endereço letra por letra, ou abra a página de versões pelo navegador do Downloader. |
+| O Downloader não acha o código ou o endereço | Confira os números (9849078) ou o endereço letra por letra, ou abra a página de versões pelo navegador do Downloader. |
 | O app não aparece na lista | No Fire TV, veja em Apps › Ver tudo; em algumas TVs, o app novo vai para o fim da lista. |

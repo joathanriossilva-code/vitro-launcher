@@ -113,7 +113,7 @@ Escolha um jeito:
 
 - **Pelo app Downloader** (Fire TV, e na Play Store do Google TV): permita que ele instale apps (Fire TV: Opções
   do desenvolvedor › Instalar apps desconhecidos; Google TV: Configurações › Apps › Segurança e restrições ›
-  Fontes desconhecidas) e abra o endereço do `vitro.apk` na página de versões (Releases) deste repositório.
+  Fontes desconhecidas) e digite o código **9849078** no campo de endereço: ele baixa o `vitro.apk` mais recente.
 - **Pelo app Send Files to TV**, do celular para a TV.
 - **Pelo computador**, com o [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools):
 

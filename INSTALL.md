@@ -42,13 +42,23 @@ Vitro is not on the Amazon or Google stores: you install it from the `vitro.apk`
    | Google TV | Settings › Apps › Security & restrictions › **Unknown sources** › Downloader: **On** |
    | Android TV | Settings › Device Preferences › Security & restrictions › **Unknown sources** › Downloader: **On** |
 
-3. **Open Downloader** and type this in the address field:
+3. **Open Downloader** and type just the code in the address field:
+
+   ```
+   9849078
+   ```
+
+   Press **Go**. The download starts by itself. The code always leads to the latest Vitro release.
+
+   <details>
+   <summary>If you'd rather type the full address</summary>
 
    ```
    github.com/joathanriossilva-code/vitro-launcher/releases/latest/download/vitro.apk
    ```
 
-   Press **Go**. The download starts by itself.
+   That is where the code leads (check it at `aftv.news/9849078+` in any browser).
+   </details>
 4. When it finishes, press **Install** and then **Done**. Downloader offers to delete the downloaded file: you can.
 
 > Want to pick a version? Type `github.com/joathanriossilva-code/vitro-launcher/releases` in Downloader, which has a
@@ -119,5 +129,5 @@ adb install vitro.apk
 |---|---|
 | "Install blocked", or no Install button | The app that downloaded the file is not allowed to install apps yet (Downloader's step 2). |
 | "App not installed" | Another Vitro build signed with a different key is installed (for example one you compiled). Uninstall it and install again. |
-| Downloader can't find the address | Check the address letter by letter, or open the Releases page in Downloader's browser. |
+| Downloader can't find the code or the address | Check the digits (9849078) or the address letter by letter, or open the Releases page in Downloader's browser. |
 | The app is not in the list | On Fire TV, look in Apps › See all; on some TVs, new apps go to the end of the list. |
