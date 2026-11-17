@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="app.vitro.launcher" android:versionCode="15" android:versionName="0.4.0">
+    package="app.vitro.launcher" android:versionCode="16" android:versionName="0.4.1">
     <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="28" />
     <!-- Só para falar com o ADB da própria TV, pelo túnel local (ver Tunnel). Nada sai da TV. -->
     <uses-permission android:name="android.permission.INTERNET" />

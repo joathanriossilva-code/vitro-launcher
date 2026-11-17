@@ -106,18 +106,23 @@ abstract class GlassActivity extends Activity {
         klp.topMargin = px(18);
         panel.addView(keys, klp);
 
+        // Última linha do painel: o aviso à esquerda e, à direita, a dica do controle. A dica fica dentro do vidro
+        // e na mesma linha do aviso, sem aumentar o painel; no canto da tela, um painel alto passava por cima dela.
+        LinearLayout foot = new LinearLayout(this);
+        foot.setOrientation(LinearLayout.HORIZONTAL);
+        foot.setGravity(Gravity.BOTTOM);
         status = label(13, false, 0xB3FFFFFF);
-        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        slp.topMargin = px(14);
-        panel.addView(status, slp);
-
+        foot.addView(status, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         TextView hint = label(12, false, 0x8CFFFFFF);
         hint.setText(L.t("Setas para escolher · OK para confirmar", "Arrows to choose · OK to confirm"));
-        FrameLayout.LayoutParams hlp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
-        hlp.rightMargin = px(22);
-        hlp.bottomMargin = px(14);
-        root.addView(hint, hlp);
+        hint.setSingleLine(true);
+        LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        hlp.leftMargin = px(16);
+        foot.addView(hint, hlp);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        slp.topMargin = px(14);
+        panel.addView(foot, slp);
         return root;
     }
 
